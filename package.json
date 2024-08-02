@@ -40,9 +40,7 @@
     "semver": "^7.6.3",
     "zod": "^3.23.8"
   },
-  "main": "./dist/main.cjs.js",
   "module": "./dist/main.es.js",
-  "types": "./dist/main.d.ts",
   "files": [
     "dist"
   ]
