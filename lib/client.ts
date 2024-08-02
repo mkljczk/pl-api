@@ -1,0 +1,2142 @@
+import z from 'zod';
+
+import {
+  accountSchema,
+  announcementSchema,
+  applicationSchema,
+  contextSchema,
+  conversationSchema,
+  credentialAccountSchema,
+  customEmojiSchema,
+  domainBlockSchema,
+  extendedDescriptionSchema,
+  familiarFollowersSchema,
+  featuredTagSchema,
+  filterKeywordSchema,
+  filterSchema,
+  filterStatusSchema,
+  groupMemberSchema,
+  groupRelationshipSchema,
+  groupSchema,
+  instanceSchema,
+  listSchema,
+  markersSchema,
+  mediaAttachmentSchema,
+  notificationPolicySchema,
+  notificationRequestSchema,
+  notificationSchema,
+  pollSchema,
+  relationshipSchema,
+  reportSchema,
+  ruleSchema,
+  scheduledStatusSchema,
+  searchSchema,
+  statusEditSchema,
+  statusSchema,
+  statusSourceSchema,
+  streamingEventSchema,
+  suggestionSchema,
+  tagSchema,
+  tokenSchema,
+  translationSchema,
+  trendsLinkSchema,
+  webPushSubscriptionSchema,
+} from './entities';
+import { filteredArray } from './entities/utils';
+import { type Features, getFeatures } from './features';
+import request, { getNextLink, getPrevLink, type RequestBody } from './request';
+import { buildFullPath } from './utils/url';
+
+import type { Account, Conversation, Instance, Notification, ScheduledStatus, Status, Tag } from './entities';
+import type {
+  AdminGetGroupsParams,
+  CreateAccountParams,
+  CreateApplicationParams,
+  CreateFilterParams,
+  CreateGroupParams,
+  CreateListParams,
+  CreatePushNotificationsSubscriptionParams,
+  CreateStatusParams,
+  EditStatusParams,
+  FollowAccountParams,
+  GetAccountFollowersParams,
+  GetAccountFollowingParams,
+  GetAccountStatusesParams,
+  GetBlocksParams,
+  GetBookmarksParams,
+  GetConversationsParams,
+  GetDomainBlocksParams,
+  GetEndorsementsParams,
+  GetFavouritedByParams,
+  GetFavouritesParams,
+  GetFollowedTagsParams,
+  GetFollowRequestsParams,
+  GetGroupBlocksParams,
+  GetGroupMembershipRequestsParams,
+  GetGroupMembershipsParams,
+  GetListAccountsParams,
+  GetMutesParams,
+  GetNotificationParams,
+  GetNotificationRequestsParams,
+  GetRebloggedByParams,
+  GetRelationshipsParams,
+  GetScheduledStatusesParams,
+  GetStatusContextParams,
+  GetStatusesParams,
+  GetStatusParams,
+  GetTokenParams,
+  GetTrendingLinks,
+  GetTrendingStatuses,
+  GetTrendingTags,
+  GroupMemberRole,
+  HashtagTimelineParams,
+  HomeTimelineParams,
+  ListTimelineParams,
+  MuteAccountParams,
+  OauthAuthorizeParams,
+  ProfileDirectoryParams,
+  PublicTimelineParams,
+  ReportAccountParams,
+  RevokeTokenParams,
+  SaveMarkersParams,
+  SearchAccountParams,
+  SearchParams,
+  UpdateCredentialsParams,
+  UpdateFilterParams,
+  UpdateGroupParams,
+  UpdateListParams,
+  UpdateMediaParams,
+  UpdateNotificationPolicyRequest,
+  UpdatePushNotificationsSubscriptionParams,
+  UploadMediaParams,
+} from './params';
+import type { PaginatedResponse } from './responses';
+import type { ZodTypeAny } from 'zod';
+
+class PlApiClient {
+
+  baseURL: string;
+  #accessToken?: string;
+  #instance: Instance = instanceSchema.parse({});
+  public request = request.bind(this) as typeof request;
+  public features: Features = getFeatures();
+  #socket?: {
+    listen: (listener: any, stream?: string) => number;
+    unlisten: (listener: any) => void;
+    subscribe: (stream: string, params?: { list?: string; tag?: string }) => void;
+    unsubscribe: (stream: string, params?: { list?: string; tag?: string }) => void;
+    close: () =>  void;
+  };
+
+  constructor(baseURL: string, accessToken?: string, { instance, fetchInstance }: {
+    instance?: Instance;
+    fetchInstance?: boolean;
+  } = {}) {
+    this.baseURL = baseURL;
+    this.#accessToken = accessToken;
+
+    if (instance) {
+      this.#setInstance(instance);
+    }
+    if ((!instance && fetchInstance !== false) || fetchInstance) {
+      this.instance.getInstance();
+    }
+  }
+
+  #paginatedGet = async <T>(input: URL | RequestInfo, body: RequestBody, schema: ZodTypeAny): Promise<PaginatedResponse<T>> => {
+    const getMore = (input: string | null) => input ? async () => {
+      const response = await this.request(input);
+
+      return {
+        previous: getMore(getPrevLink(response)),
+        next: getMore(getNextLink(response)),
+        items: filteredArray(schema).parse(response.json) as Array<T>,
+      };
+    } : null;
+
+    const response = await this.request(input, body);
+
+    return {
+      previous: getMore(getPrevLink(response)),
+      next: getMore(getNextLink(response)),
+      items: filteredArray(schema).parse(response.json) as Array<T>,
+    };
+  };
+
+  /** Register client applications that can be used to obtain OAuth tokens. */
+  public readonly apps = {
+    /**
+     * Create an application
+     * Create a new application to obtain OAuth2 credentials.
+     * @see {@link https://docs.joinmastodon.org/methods/apps/#create}
+     */
+    createApplication: async (params: CreateApplicationParams) => {
+      const response = await this.request('/api/v1/apps', { method: 'POST', body: params });
+
+      return applicationSchema.parse(response.json);
+    },
+
+    /**
+     * Verify your app works
+     * Confirm that the app’s OAuth2 credentials work.
+     * @see {@link https://docs.joinmastodon.org/methods/apps/#verify_credentials}
+     */
+    verifyApplication: async () => {
+      const response = await this.request('/api/v1/apps/verify_credentials');
+
+      return applicationSchema.parse(response.json);
+    },
+  };
+
+  public readonly oauth = {
+    /**
+     * Authorize a user
+     * Displays an authorization form to the user. If approved, it will create and return an authorization code, then redirect to the desired `redirect_uri`, or show the authorization code if `urn:ietf:wg:oauth:2.0:oob` was requested. The authorization code can be used while requesting a token to obtain access to user-level methods.
+     * @see {@link https://docs.joinmastodon.org/methods/oauth/#authorize}
+     */
+    authorize: async (params: OauthAuthorizeParams) => {
+      const response = await this.request('/oauth/authorize', { params });
+
+      return z.string().parse(response.json);
+    },
+
+    /**
+     * Obtain a token
+     * Obtain an access token, to be used during API calls that are not public.
+     * @see {@link https://docs.joinmastodon.org/methods/oauth/#token}
+     */
+    getToken: async (params: GetTokenParams) => {
+      const response = await this.request('/oauth/token', { method: 'POST', body: params });
+
+      return tokenSchema.parse(response.json);
+    },
+
+    /**
+     * Revoke a token
+     * Revoke an access token to make it no longer valid for use.
+     * @see {@link https://docs.joinmastodon.org/methods/oauth/#revoke}
+     */
+    revokeToken: async (params: RevokeTokenParams) => {
+      const response = await this.request('/oauth/revoke', { method: 'POST', body: params });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly emails = {
+    resendConfirmationEmail: async (email: string) => {
+      const response = await this.request('/api/v1/emails/confirmations', { method: 'POST', body: { email } });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly accounts = {
+    /**
+     * Register an account
+     * Creates a user and account records. Returns an account access token for the app that initiated the request. The app should save this token for later, and should wait for the user to confirm their account by clicking a link in their email inbox.
+     * Requires `features.accountCreation`
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#create}
+     */
+    createAccount: async (params: CreateAccountParams) => {
+      const response = await this.request('/api/v1/accounts', {
+        method: 'POST',
+        body: params,
+      });
+
+      return tokenSchema.parse(response.json);
+    },
+
+    /**
+     * Verify account credentials
+     * Test to make sure that the user token works.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#verify_credentials}
+     */
+    verifyCredentials: async () => {
+      const response = await this.request('/api/v1/accounts/verify_credentials');
+
+      return credentialAccountSchema.parse(response.json);
+    },
+
+    /**
+     * Update account credentials
+     * Update the user’s display and preferences.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#update_credentials}
+     */
+    updateCredentials: async (params: UpdateCredentialsParams) => {
+      const response = await this.request('/api/v1/accounts/update_credentials', {
+        method: 'PATCH',
+        contentType: params.avatar || params.header ? '' : undefined,
+        body: params,
+      });
+
+      return credentialAccountSchema.parse(response.json);
+    },
+
+    /**
+     * Get account
+     * View information about a profile.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#get}
+     */
+    getAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}`);
+
+      return accountSchema.parse(response.json);
+    },
+
+    /**
+     * Get multiple accounts
+     * View information about multiple profiles.
+     * Requires `features.getAccounts`.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#index}
+     */
+    getAccounts: async (accountId: string[]) => {
+      const response = await this.request('/api/v1/accounts', { params: { id: accountId } });
+
+      return filteredArray(accountSchema).parse(response.json);
+    },
+
+    /**
+     * Get account’s statuses
+     * Statuses posted to the given account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#statuses}
+     */
+    getAccountStatuses: async (accountId: string, params?: GetAccountStatusesParams) =>
+      this.#paginatedGet<Status>(`/api/v1/accounts/${accountId}/statuses`, { params }, statusSchema),
+
+    /**
+     * Get account’s followers
+     * Accounts which follow the given account, if network is not hidden by the account owner.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#followers}
+     */
+    getAccountFollowers: async (accountId: string, params?: GetAccountFollowersParams) =>
+      this.#paginatedGet<Account>(`/api/v1/accounts/${accountId}/followers`, { params }, statusSchema),
+
+    /**
+     * Get account’s following
+     * Accounts which the given account is following, if network is not hidden by the account owner.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#following}
+     */
+    getAccountFollowing: async (accountId: string, params?: GetAccountFollowingParams) =>
+      this.#paginatedGet<Account>(`/api/v1/accounts/${accountId}/following`, { params }, statusSchema),
+
+    /**
+     * Get account’s featured tags
+     * Tags featured by this account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#featured_tags}
+     */
+    getAccountFeaturedTags: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/featured_tags`);
+
+      return filteredArray(featuredTagSchema).parse(response.json);
+    },
+
+    /**
+     * Get lists containing this account
+     * User lists that you have added this account to.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#lists}
+     */
+    getAccountLists: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/lists`);
+
+      return filteredArray(listSchema).parse(response.json);
+    },
+
+    /**
+     * Follow account
+     * Follow the given account. Can also be used to update whether to show reblogs or enable notifications.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#follow}
+     */
+    followAccount: async (accountId: string, params?: FollowAccountParams) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/follow`, { method: 'POST', params });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Unfollow account
+     * Unfollow the given account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unfollow}
+     */
+    unfollowAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/unfollow`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Remove account from followers
+     * Remove the given account from your followers.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#remove_from_followers}
+     */
+    removeAccountFromFollowers: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/remove_from_followers`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Block account
+     * Block the given account. Clients should filter statuses from this account if received (e.g. due to a boost in the Home timeline)
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#block}
+     */
+    blockAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/block`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Unblock account
+     * Unblock the given account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unblock}
+     */
+    unblockAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/unblock`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Mute account
+     * Mute the given account. Clients should filter statuses and notifications from this account, if received (e.g. due to a boost in the Home timeline).
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#mute}
+     */
+    muteAccount: async (accountId: string, params?: MuteAccountParams) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/mute`, { method: 'POST', params });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Unmute account
+     * Unmute the given account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unmute}
+     */
+    unmuteAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/unmute`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Feature account on your profile
+     * Add the given account to the user’s featured profiles.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#pin}
+     */
+    pinAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/pin`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Unfeature account from profile
+     * Remove the given account from the user’s featured profiles.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unpin}
+     */
+    unpinAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/unpin`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Set private note on profile
+     * Sets a private note on a user.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#note}
+     */
+    updateAccountNote: async (accountId: string, comment: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/note`, { method: 'POST', body: { comment } });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Check relationships to other accounts
+     * Find out whether a given account is followed, blocked, muted, etc.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#relationships}
+     */
+    getRelationships: async (accountIds: string[], params?: GetRelationshipsParams) => {
+      const response = await this.request('/api/v1/accounts/relationships', { params: { ...params, id: accountIds } });
+
+      return filteredArray(relationshipSchema).parse(response.json);
+    },
+
+    /**
+     * Find familiar followers
+     * Obtain a list of all accounts that follow a given account, filtered for accounts you follow.
+     * Requires `features.familiarFollowers`.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#familiar_followers}
+     */
+    getFamiliarFollowers: async (accountIds: string[]) => {
+      const response = await this.request('/api/v1/accounts/familiar_followers', { params: { id: accountIds } });
+
+      return filteredArray(familiarFollowersSchema).parse(response.json);
+    },
+
+    /**
+     * Search for matching accounts
+     * Search for matching accounts by username or display name.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#search}
+     */
+    searchAccounts: async (q: string, params?: SearchAccountParams) => {
+      const response = await this.request('/api/v1/accounts/search', { params: { ...params, q } });
+
+      return filteredArray(accountSchema).parse(response.json);
+    },
+
+    /**
+     * Lookup account ID from Webfinger address
+     * Quickly lookup a username to see if it is available, skipping WebFinger resolution.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#lookup}
+     */
+    lookupAccount: async (acct: string) => {
+      const response = await this.request('/api/v1/accounts/lookup', { params: { acct } });
+
+      return accountSchema.parse(response.json);
+    },
+
+    /**
+     * View bookmarked statuses
+     * Statuses the user has bookmarked.
+     * @see {@link https://docs.joinmastodon.org/methods/bookmarks/#get}
+     */
+    getBookmarks: async (params?: GetBookmarksParams) =>
+      this.#paginatedGet<Status>('/api/v1/bookmarks', { params }, statusSchema),
+
+    /**
+     * View favourited statuses
+     * Statuses the user has favourited.
+     * @see {@link https://docs.joinmastodon.org/methods/favourites/#get}
+     */
+    getFavourites: async (params?: GetFavouritesParams) =>
+      this.#paginatedGet<Status>('/api/v1/favourites', { params }, statusSchema),
+
+    /**
+     * File a report
+     * @see {@link https://docs.joinmastodon.org/methods/reports/#post}
+     */
+    reportAccount: async (accountId: string, params: ReportAccountParams) => {
+      const response = await this.request('/api/v1/reports', {
+        method: 'POST',
+        body: { ...params, account_id: accountId },
+      });
+
+      return reportSchema.parse(response.json);
+    },
+
+    /**
+     * View pending follow requests
+     * @see {@link https://docs.joinmastodon.org/methods/follow_requests/#get}
+     */
+    getFollowRequests: async (params?: GetFollowRequestsParams) =>
+      this.#paginatedGet<Account>('/api/v1/follow_requests', { params }, accountSchema),
+
+    /**
+     * Accept follow request
+     * @see {@link https://docs.joinmastodon.org/methods/follow_requests/#accept}
+     */
+    acceptFollowRequest: async (accountId: string) => {
+      const response = await this.request(`/api/v1/follow_requests/${accountId}/accept`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Reject follow request
+     * @see {@link https://docs.joinmastodon.org/methods/follow_requests/#reject}
+     */
+    rejectFollowRequest: async (accountId: string) => {
+      const response = await this.request(`/api/v1/follow_requests/${accountId}/reject`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * View currently featured profiles
+     * Accounts that the user is currently featuring on their profile.
+     * @see {@link https://docs.joinmastodon.org/methods/endorsements/#get}
+     */
+    getEndorsements: async (params?: GetEndorsementsParams) =>
+      this.#paginatedGet<Account>('/api/v1/endorsements', { params }, accountSchema),
+
+    /**
+     * View your featured tags
+     * List all hashtags featured on your profile.
+     * @see {@link https://docs.joinmastodon.org/methods/featured_tags/#get}
+     */
+    getFeaturedTags: async () => {
+      const response = await this.request('/api/v1/featured_tags');
+
+      return filteredArray(featuredTagSchema).parse(response.json);
+    },
+
+    /**
+     * Feature a tag
+     * Promote a hashtag on your profile.
+     * @see {@link https://docs.joinmastodon.org/methods/featured_tags/#feature}
+     */
+    featureTag: async (name: string) => {
+      const response = await this.request('/api/v1/featured_tags', {
+        method: 'POST',
+        body: { name },
+      });
+
+      return filteredArray(featuredTagSchema).parse(response.json);
+    },
+
+    /**
+     * Unfeature a tag
+     * Stop promoting a hashtag on your profile.
+     * @see {@link https://docs.joinmastodon.org/methods/featured_tags/#unfeature}
+     */
+    unfeatureTag: async (name: string) => {
+      const response = await this.request('/api/v1/featured_tags', {
+        method: 'DELETE',
+        body: { name },
+      });
+
+      return response.json as {};
+    },
+
+    /**
+     * View suggested tags to feature
+     * Shows up to 10 recently-used tags.
+     * @see {@link https://docs.joinmastodon.org/methods/featured_tags/#suggestions}
+     */
+    getFeaturedTagsSuggestions: async () => {
+      const response = await this.request('/api/v1/featured_tags/suggestions');
+
+      return filteredArray(tagSchema).parse(response.json);
+    },
+
+    /**
+     * View user preferences
+     * Preferences defined by the user in their account settings.
+     * @see {@link https://docs.joinmastodon.org/methods/preferences/#get}
+     */
+    getPreferences: async () => {
+      const response = await this.request('/api/v1/preferences');
+
+      return response.json as Record<string, any>;
+    },
+
+    /**
+     * View all followed tags
+     * List your followed hashtags.
+     * Requires `features.followHashtags`.
+     * @see {@link https://docs.joinmastodon.org/methods/followed_tags/#get}
+     */
+    getFollowedTags: async (params?: GetFollowedTagsParams) =>
+      this.#paginatedGet<Tag>('/api/v1/followed_tags', { params }, tagSchema),
+
+    /**
+     * View information about a single tag
+     * Show a hashtag and its associated information
+     * @see {@link https://docs.joinmastodon.org/methods/tags/#get}
+     */
+    getTag: async (tagId: string) => {
+      const response = await this.request(`/api/v1/tags/${tagId}`);
+
+      return tagSchema.parse(response.json);
+    },
+
+    /**
+     * Follow a hashtag
+     * Follow a hashtag. Posts containing a followed hashtag will be inserted into your home timeline.
+     * @see {@link https://docs.joinmastodon.org/methods/tags/#follow}
+     */
+    followTag: async (tagId: string) => {
+      const response = await this.request(`/api/v1/tags/${tagId}/follow`, { method: 'POST' });
+
+      return tagSchema.parse(response.json);
+    },
+
+    /**
+     * Unfollow a hashtag
+     * Unfollow a hashtag. Posts containing this hashtag will no longer be inserted into your home timeline.
+     * @see {@link https://docs.joinmastodon.org/methods/tags/#unfollow}
+     */
+    unfollowTag: async (tagId: string) => {
+      const response = await this.request(`/api/v1/tags/${tagId}/unfollow`, { method: 'POST' });
+
+      return tagSchema.parse(response.json);
+    },
+
+    /**
+     * View follow suggestions
+     * Accounts that are promoted by staff, or that the user has had past positive interactions with, but is not yet following.
+     * Requires `features.suggestions`.
+     * @see {@link https://docs.joinmastodon.org/methods/suggestions/#v2}
+     */
+    getSuggestions: async (limit?: number) => {
+      const response = await this.request(
+        this.features.suggestionsV2 ? '/api/v2/suggestions' : '/api/v1/suggestions',
+        { params: { limit } },
+      );
+
+      return filteredArray(suggestionSchema).parse(response.json);
+    },
+
+    /**
+     * Remove a suggestion
+     * Remove an account from follow suggestions.
+     * Requires `features.suggestions`.
+     * @see {@link https://docs.joinmastodon.org/methods/suggestions/#remove}
+     */
+    dismissSuggestions: async (accountId: string) => {
+      const response = await this.request(`/api/v1/suggestions/${accountId}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly profiles = {
+    /**
+     * Delete profile avatar
+     * Deletes the avatar associated with the user’s profile.
+     * @see {@link https://docs.joinmastodon.org/methods/profile/#delete-profile-avatar}
+     */
+    deleteAvatar: async () => {
+      const response = await this.request('/api/v1/profile/avatar', { method: 'DELETE' });
+
+      return credentialAccountSchema.parse(response.json);
+    },
+
+    /**
+     * Delete profile header
+     * Deletes the header image associated with the user’s profile.
+     * @see {@link https://docs.joinmastodon.org/methods/profile/#delete-profile-header}
+     */
+    deleteHeader: async () => {
+      const response = await this.request('/api/v1/profile/header', { method: 'DELETE' });
+
+      return credentialAccountSchema.parse(response.json);
+    },
+  };
+
+  public readonly filtering = {
+    /**
+     * View muted accounts
+     * Accounts the user has muted.
+     * @see {@link https://docs.joinmastodon.org/methods/mutes/#get}
+     */
+    getMutes: async (params?: GetMutesParams) =>
+      this.#paginatedGet<Account>('/api/v1/mutes', { params }, accountSchema),
+
+    /**
+     * View blocked users
+     * @see {@link https://docs.joinmastodon.org/methods/blocks/#get}
+     */
+    getBlocks: async (params?: GetBlocksParams) =>
+      this.#paginatedGet<Account>('/api/v1/blocks', { params }, accountSchema),
+
+    /**
+     * Get domain blocks
+     * View domains the user has blocked.
+     * @see {@link https://docs.joinmastodon.org/methods/domain_blocks/#get}
+     */
+    getDomainBlocks: async (params?: GetDomainBlocksParams) =>
+      this.#paginatedGet<string>('/api/v1/domain_blocks', { params }, z.string()),
+
+    /**
+     * Block a domain
+     * Block a domain to:
+     * - hide all public posts from it
+     * - hide all notifications from it
+     * - remove all followers from it
+     * - prevent following new users from it (but does not remove existing follows)
+     * @see {@link https://docs.joinmastodon.org/methods/domain_blocks/#block}
+     */
+    blockDomain: async (domain: string) => {
+      const response = await this.request('/api/v1/domain_blocks', { method: 'POST', body: { domain } });
+
+      return response.json as {};
+    },
+
+    /**
+     * Unblock a domain
+     * Remove a domain block, if it exists in the user’s array of blocked domains.
+     * @see {@link https://docs.joinmastodon.org/methods/domain_blocks/#unblock}
+     */
+    unblockDomain: async (domain: string) => {
+      const response = await this.request('/api/v1/domain_blocks', {
+        method: 'DELETE',
+        body: { domain },
+      });
+
+      return response.json as {};
+    },
+
+    /**
+     * View all filters
+     * Obtain a list of all filter groups for the current user.
+     * Requires `features.filters` or `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#get}
+     */
+    getFilters: async () => {
+      const response = await this.request(this.features.filtersV2 ? '/api/v2/filters' : '/api/v1/filters');
+
+      return filteredArray(filterSchema).parse(response.json);
+    },
+
+    /**
+     * View a specific filter
+     * Obtain a single filter group owned by the current user.
+     * Requires `features.filters` or `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#get-one}
+     */
+    getFilter: async (filterId: string) => {
+      const response = await this.request(
+        this.features.filtersV2
+          ? `/api/v2/filters/${filterId}`
+          : `/api/v1/filters/${filterId}`,
+      );
+
+      return filterSchema.parse(response.json);
+    },
+
+    /**
+     * Create a filter
+     * Create a filter group with the given parameters.
+     * Requires `features.filters` or `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#create}
+     */
+    createFilter: async (params: CreateFilterParams) => {
+      const { filtersV2 } = this.features;
+      const response = await this.request(
+        filtersV2 ? '/api/v2/filters' : '/api/v1/filters',
+        {
+          method: 'POST',
+          body: filtersV2 ? params : {
+            phrase: params.keywords_attributes[0]?.keyword,
+            context: params.context,
+            irreversible: params.filter_action === 'hide',
+            whole_word: params.keywords_attributes[0]?.whole_word,
+            expires_in: params.expires_in,
+          },
+        },
+      );
+
+      return filterSchema.parse(response.json);
+    },
+
+    /**
+     * Update a filter
+     * Update a filter group with the given parameters.
+     * Requires `features.filters` or `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#update}
+     */
+    updateFilter: async (filterId: string, params: UpdateFilterParams) => {
+      const { filtersV2 } = this.features;
+      const response = await this.request(
+        filtersV2 ? `/api/v2/filters/${filterId}` : `/api/v1/filters/${filterId}`,
+        {
+          method: 'PUT',
+          body: filtersV2 ? params : {
+            phrase: params.keywords_attributes?.[0]?.keyword,
+            context: params.context,
+            irreversible: params.filter_action === 'hide',
+            whole_word: params.keywords_attributes?.[0]?.whole_word,
+            expires_in: params.expires_in,
+          },
+        },
+      );
+
+      return filterSchema.parse(response.json);
+    },
+
+    /**
+     * Delete a filter
+     * Delete a filter group with the given id.
+     * Requires `features.filters` or `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#delete}
+     */
+    deleteFilter: async (filterId: string) => {
+      const response = await this.request(
+        this.features.filtersV2
+          ? `/api/v2/filters/${filterId}`
+          : `/api/v1/filters/${filterId}`,
+        { method: 'DELETE' },
+      );
+
+      return response.json as {};
+    },
+
+    /**
+     * View keywords added to a filter
+     * List all keywords attached to the current filter group.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-get}
+     */
+    getFilterKeywords: async (filterId: string) => {
+      const response = await this.request(`/api/v2/filters/${filterId}/keywords`);
+
+      return filteredArray(filterKeywordSchema).parse(response.json);
+    },
+
+    /**
+     * Add a keyword to a filter
+     * Add the given keyword to the specified filter group
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-create}
+     */
+    addFilterKeyword: async (filterId: string, keyword: string, whole_word?: boolean) => {
+      const response = await this.request(`/api/v2/filters/${filterId}/keywords`, {
+        method: 'POST',
+        body: { keyword, whole_word },
+      });
+
+      return filterKeywordSchema.parse(response.json);
+    },
+
+    /**
+     * View a single keyword
+     * Get one filter keyword by the given id.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-get-one}
+     */
+    getFilterKeyword: async (filterId: string) => {
+      const response = await this.request(`/api/v2/filters/keywords/${filterId}`);
+
+      return filterKeywordSchema.parse(response.json);
+    },
+
+    /**
+     * Edit a keyword within a filter
+     * Update the given filter keyword.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-update}
+     */
+    updateFilterKeyword: async (filterId: string, keyword: string, whole_word?: boolean) => {
+      const response = await this.request(`/api/v2/filters/keywords/${filterId}`, {
+        method: 'PUT',
+        body: { keyword, whole_word },
+      });
+
+      return filterKeywordSchema.parse(response.json);
+    },
+
+    /**
+     * Remove keywords from a filter
+     * Deletes the given filter keyword.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-delete}
+     */
+    deleteFilterKeyword: async (filterId: string) => {
+      const response = await this.request(`/api/v2/filters/keywords/${filterId}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+
+    /**
+     * View all status filters
+     * Obtain a list of all status filters within this filter group.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-get}
+     */
+    getFilterStatuses: async (filterId: string) => {
+      const response = await this.request(`/api/v2/filters/${filterId}/statuses`);
+
+      return filteredArray(filterStatusSchema).parse(response.json);
+    },
+
+    /**
+     * Add a status to a filter group
+     * Add a status filter to the current filter group.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-add}
+     */
+    addFilterStatus: async (filterId: string, statusId: string) => {
+      const response = await this.request(`/api/v2/filters/${filterId}/statuses`, {
+        method: 'POST',
+        body: { status_id: statusId },
+      });
+
+      return filterStatusSchema.parse(response.json);
+    },
+
+    /**
+     * View a single status filter
+     * Obtain a single status filter.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-get-one}
+     */
+    getFilterStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v2/filters/statuses/${statusId}`);
+
+      return filterStatusSchema.parse(response.json);
+    },
+
+    /**
+     * Remove a status from a filter group
+     * Remove a status filter from the current filter group.
+     * Requires `features.filtersV2`.
+     * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-remove}
+     */
+    deleteFilterStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v2/filters/statuses/${statusId}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+
+  };
+
+  public readonly statuses = {
+    /**
+     * Post a new status
+     * Publish a status with the given parameters.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#create}
+     */
+    createStatus: async (params: CreateStatusParams) => {
+      const response = await this.request('/api/v1/statuses', {
+        method: 'POST',
+        body: params,
+      });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * View a single status
+     * Obtain information about a status.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#get}
+     */
+    getStatus: async (statusId: string, params?: GetStatusParams) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}`, { params });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * View multiple statuses
+     * Obtain information about multiple statuses.
+     * Requires `features.getStatuses`.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#index}
+    */
+    getStatuses: async (statusIds: string[], params?: GetStatusesParams) => {
+      const response = await this.request('/api/v1/statuses', { params: { ...params, id: statusIds } });
+
+      return filteredArray(statusSchema).parse(response.json);
+    },
+
+    /**
+     * Delete a status
+     * Delete one of your own statuses.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#delete}
+    */
+    deleteStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}`, { method: 'DELETE' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Get parent and child statuses in context
+     * View statuses above and below this status in the thread.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#context}
+     */
+    getContext: async (statusId: string, params?: GetStatusContextParams) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/context`, { params });
+
+      return contextSchema.parse(response.json);
+    },
+
+    /**
+     * Translate a status
+     * Translate the status content into some language.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#translate}
+     */
+    translateStatus: async (statusId: string, lang?: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/translate`, { method: 'POST', body: { lang } });
+
+      return translationSchema.parse(response.json);
+    },
+
+    /**
+     * See who boosted a status
+     * View who boosted a given status.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#reblogged_by}
+     */
+    getRebloggedBy: async (statusId: string, params?: GetRebloggedByParams) =>
+      this.#paginatedGet<Account>(`/api/v1/statuses/${statusId}/reblogged_by`, { params }, accountSchema),
+
+    /**
+     * See who favourited a status
+     * View who favourited a given status.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#favourited_by}
+     */
+    getFavouritedBy: async (statusId: string, params?: GetFavouritedByParams) =>
+      this.#paginatedGet<Account>(`/api/v1/statuses/${statusId}/favourited_by`, { params }, accountSchema),
+
+    /**
+     * Favourite a status
+     * Add a status to your favourites list.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#favourite}
+     */
+    favouriteStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/favourite`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Undo favourite of a status
+     * Remove a status from your favourites list.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#unfavourite}
+     */
+    unfavouriteStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/unfavourite`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Boost a status
+     * Reshare a status on your own profile.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#reblog}
+     */
+    reblogStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/reblog`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Undo boost of a status
+     * Undo a reshare of a status.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#unreblog}
+     */
+    unreblogStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/unreblog`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Bookmark a status
+     * Privately bookmark a status.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#bookmark}
+     */
+    bookmarkStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/bookmark`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Undo bookmark of a status
+     * Remove a status from your private bookmarks.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#unbookmark}
+     */
+    unbookmarkStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/unbookmark`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Mute a conversation
+     * Do not receive notifications for the thread that this status is part of. Must be a thread in which you are a participant.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#mute}
+     */
+    muteStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/mute`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Unmute a conversation
+     * Start receiving notifications again for the thread that this status is part of.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#unmute}
+     */
+    unmuteStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/unmute`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Pin status to profile
+     * Feature one of your own public statuses at the top of your profile.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#pin}
+     */
+    pinStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/pin`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Unpin status from profile
+     * Unfeature a status from the top of your profile.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#unpin}
+     */
+    unpinStatus: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/unpin`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Edit a status
+     * Edit a given status to change its text, sensitivity, media attachments, or poll. Note that editing a poll’s options will reset the votes.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#unpin}
+     */
+    editStatus: async (statusId: string, params: EditStatusParams) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}`, { method: 'PUT', body: params });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * View edit history of a status
+     * Get all known versions of a status, including the initial and current states.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#history}
+     */
+    getStatusHistory: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/history`);
+
+      return filteredArray(statusEditSchema).parse(response.json);
+    },
+
+    /**
+     * View status source
+     * Obtain the source properties for a status so that it can be edited.
+     * @see {@link https://docs.joinmastodon.org/methods/statuses/#source}
+     */
+    getStatusSource: async (statusId: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/source`);
+
+      return statusSourceSchema.parse(response.json);
+    },
+  };
+
+  public readonly media = {
+    /**
+     * Upload media as an attachment
+     * Creates a media attachment to be used with a new status. The full sized media will be processed asynchronously in the background for large uploads.
+     * @see {@link https://docs.joinmastodon.org/methods/media/#v2}
+     */
+    uploadMedia: async (params: UploadMediaParams, onUploadProgress?: (e: ProgressEvent) => void) => {
+      const response = await this.request(
+        this.features.mediaV2 ? '/api/v2/media' : '/api/v1/media',
+        { method: 'POST', body: params, contentType: '', onUploadProgress },
+      );
+
+      return mediaAttachmentSchema.parse(response.json);
+    },
+
+    /**
+     * Get media attachment
+     * Get a media attachment, before it is attached to a status and posted, but after it is accepted for processing. Use this method to check that the full-sized media has finished processing.
+     * @see {@link https://docs.joinmastodon.org/methods/media/#get}
+     */
+    getMedia: async (attachmentId: string) => {
+      const response = await this.request(`/api/v1/media/${attachmentId}`);
+
+      return mediaAttachmentSchema.parse(response.json);
+    },
+
+    /**
+     * Update media attachment
+     * Update a MediaAttachment’s parameters, before it is attached to a status and posted.
+     * @see {@link https://docs.joinmastodon.org/methods/media/#update}
+     */
+    updateMedia: async (attachmentId: string, params: UpdateMediaParams) => {
+      const response = await this.request(`/api/v1/media/${attachmentId}`, {
+        method: 'PUT',
+        body: params, contentType: params.thumbnail ? '' : undefined,
+      });
+
+      return mediaAttachmentSchema.parse(response.json);
+    },
+  };
+
+  public readonly polls = {
+    /**
+     * View a poll
+     * View a poll attached to a status.
+     * @see {@link https://docs.joinmastodon.org/methods/polls/#get}
+     */
+    getPoll: async (pollId: string) => {
+      const response = await this.request(`/api/v1/polls/${pollId}`);
+
+      return pollSchema.parse(response.json);
+    },
+
+    /**
+     * Vote on a poll
+     * Vote on a poll attached to a status.
+     * @see {@link https://docs.joinmastodon.org/methods/polls/#vote}
+     */
+    vote: async (pollId: string, choices: number[]) => {
+      const response = await this.request(`/api/v1/polls/${pollId}/votes`, { method: 'POST', body: { choices } });
+
+      return pollSchema.parse(response.json);
+    },
+  };
+
+  public readonly scheduledStatuses = {
+    /**
+     * View scheduled statuses
+     * @see {@link https://docs.joinmastodon.org/methods/scheduled_statuses/#get}
+     */
+    getScheduledStatuses: async (params?: GetScheduledStatusesParams) =>
+      this.#paginatedGet<ScheduledStatus>('/api/v1/scheduled_statuses', { params }, scheduledStatusSchema),
+
+    /**
+     * View a single scheduled status
+     * @see {@link https://docs.joinmastodon.org/methods/scheduled_statuses/#get-one}
+     */
+    getScheduledStatus: async (scheduledStatusId: string) => {
+      const response = await this.request(`/api/v1/scheduled_statuses/${scheduledStatusId}`);
+
+      return scheduledStatusSchema.parse(response.json);
+    },
+
+    /**
+     * Update a scheduled status’s publishing date
+     * @see {@link https://docs.joinmastodon.org/methods/scheduled_statuses/#update}
+     */
+    updateScheduledStatus: async (scheduledStatusId: string, scheduled_at: string) => {
+      const response = await this.request(`/api/v1/scheduled_statuses/${scheduledStatusId}`, {
+        method: 'PUT',
+        body: { scheduled_at },
+      });
+
+      return scheduledStatusSchema.parse(response.json);
+    },
+
+    /**
+     * Cancel a scheduled status
+     * @see {@link https://docs.joinmastodon.org/methods/scheduled_statuses/#cancel}
+     */
+    cancelScheduledStatus: async (scheduledStatusId: string) => {
+      const response = await this.request(`/api/v1/scheduled_statuses/${scheduledStatusId}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly timelines = {
+    /**
+     * View public timeline
+     * View public statuses.
+     * @see {@link https://docs.joinmastodon.org/methods/timelines/#public}
+     */
+    publicTimeline: (params?: PublicTimelineParams) =>
+      this.#paginatedGet<Status>('/api/v1/timeline/public', { params }, statusSchema),
+
+    /**
+     * View hashtag timeline
+     * View public statuses containing the given hashtag.
+     * @see {@link https://docs.joinmastodon.org/methods/timelines/#tag}
+     */
+    hashtagTimeline: (hashtag: string, params?: HashtagTimelineParams) =>
+      this.#paginatedGet<Status>(`/api/v1/timeline/tag/${hashtag}`, { params }, statusSchema),
+
+    /**
+     * View home timeline
+     * View statuses from followed users and hashtags.
+     * @see {@link https://docs.joinmastodon.org/methods/timelines/#home}
+     */
+    homeTimeline: (params?: HomeTimelineParams) =>
+      this.#paginatedGet<Status>('/api/v1/timeline/home', { params }, statusSchema),
+
+    /**
+     * View link timeline
+     * View public statuses containing a link to the specified currently-trending article. This only lists statuses from people who have opted in to discoverability features.
+     * @see {@link https://docs.joinmastodon.org/methods/timelines/#link}
+     */
+    linkTimeline: (url: string, params?: HashtagTimelineParams) =>
+      this.#paginatedGet<Status>('/api/v1/timeline/link', { params: { ...params, url } }, statusSchema),
+
+    /**
+     * View list timeline
+     * View statuses in the given list timeline.
+     * @see {@link https://docs.joinmastodon.org/methods/timelines/#list}
+     */
+    listTimeline: (listId: string, params?: ListTimelineParams) =>
+      this.#paginatedGet<Status>(`/api/v1/timeline/list/${listId}`, { params }, statusSchema),
+
+    /**
+     * View all conversations
+     * @see {@link https://docs.joinmastodon.org/methods/conversations/#get}
+     */
+    getConversations: (params?: GetConversationsParams) =>
+      this.#paginatedGet<Conversation>('/api/v1/conversations', { params }, conversationSchema),
+
+    /**
+     * Remove a conversation
+     * Removes a conversation from your list of conversations.
+     * @see {@link https://docs.joinmastodon.org/methods/conversations/#delete}
+     */
+    deleteConversation: async (conversationId: string) => {
+      const response = await this.request(`/api/v1/conversations/${conversationId}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+
+    /**
+     * Mark a conversation as read
+     * @see {@link https://docs.joinmastodon.org/methods/conversations/#read}
+     */
+    markConversationRead: async (conversationId: string) => {
+      const response = await this.request(`/api/v1/conversations/${conversationId}/read`, { method: 'POST' });
+
+      return conversationSchema.parse(response.json);
+    },
+
+    /**
+     * Get saved timeline positions
+     * Get current positions in timelines.
+     * @see {@link https://docs.joinmastodon.org/methods/markers/#get}
+     */
+    getMarkers: async (timelines?: string[]) => {
+      const response = await this.request('/api/v1/markers', { params: { timeline: timelines } });
+
+      return markersSchema.parse(response.json);
+    },
+
+    /**
+     * Save your position in a timeline
+     * Save current position in timeline.
+     * @see {@link https://docs.joinmastodon.org/methods/markers/#create}
+     */
+    saveMarkers: async (params: SaveMarkersParams) => {
+      const response = await this.request('/api/v1/markers', { method: 'POST', body: params });
+
+      return markersSchema.parse(response.json);
+    },
+  };
+
+  public readonly lists = {
+    /**
+     * View your lists
+     * Fetch all lists that the user owns.
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#get}
+     */
+    getLists: async () => {
+      const response = await this.request('/api/v1/lists');
+
+      return filteredArray(listSchema).parse(response.json);
+    },
+
+    /**
+     * Show a single list
+     * Fetch the list with the given ID. Used for verifying the title of a list, and which replies to show within that list.
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#get-one}
+     */
+    getList: async (listId: string) => {
+      const response = await this.request(`/api/v1/lists/${listId}`);
+
+      return listSchema.parse(response.json);
+    },
+
+    /**
+     * Create a list
+     * Create a new list.
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#create}
+     */
+    createList: async (params: CreateListParams) => {
+      const response = await this.request('/api/v1/lists', { method: 'POST', body: params });
+
+      return listSchema.parse(response.json);
+    },
+
+    /**
+     * Update a list
+     * Change the title of a list, or which replies to show.
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#update}
+     */
+    updateList: async (listId: string, params: UpdateListParams) => {
+      const response = await this.request(`/api/v1/lists/${listId}`, { method: 'PUT', body: params });
+
+      return listSchema.parse(response.json);
+    },
+
+    /**
+     * Delete a list
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#delete}
+     */
+    deleteList: async (listId: string) => {
+      const response = await this.request(`/api/v1/lists/${listId}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+
+    /**
+     * View accounts in a list
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#accounts}
+     */
+    getListAccounts: async (listId: string, params?: GetListAccountsParams) =>
+      this.#paginatedGet<Account>(`/api/v1/lists/${listId}/accounts`, { params }, accountSchema),
+
+    /**
+     * Add accounts to a list
+     * Add accounts to the given list. Note that the user must be following these accounts.
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#accounts-add}
+     */
+    addListAccounts: async (listId: string, accountIds: string[]) => {
+      const response = await this.request(`/api/v1/lists/${listId}/accounts`, {
+        method: 'POST', body: { account_ids: accountIds },
+      });
+
+      return response.json as {};
+    },
+
+    /**
+     * Remove accounts from list
+     * Remove accounts from the given list.
+     * @see {@link https://docs.joinmastodon.org/methods/lists/#accounts-remove}
+     */
+    deleteListAccounts: async (listId: string, accountIds: string[]) => {
+      const response = await this.request(`/api/v1/lists/${listId}/accounts`, {
+        method: 'DELETE', body: { account_ids: accountIds },
+      });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly streaming = {
+    /**
+     * Check if the server is alive
+     * Verify that the streaming service is alive before connecting to it
+     * @see {@link https://docs.joinmastodon.org/methods/streaming/#health}
+     */
+    health: async () => {
+      const response = await this.request('/api/v1/streaming/health');
+
+      return z.literal('OK').parse(response.json);
+    },
+
+    /**
+     * Establishing a WebSocket connection
+     * Open a multiplexed WebSocket connection to receive events.
+     * @see {@link https://docs.joinmastodon.org/methods/streaming/#websocket}
+     */
+    connect: async () => {
+      if (this.#socket) return this.#socket;
+
+      const path = buildFullPath('/api/v1/streaming', this.#instance?.configuration.urls.streaming);
+      const ws = new WebSocket(path, this.accessToken as any);
+
+      let listeners: Array<{ listener: any; stream?: string }> = [];
+
+      ws.onmessage = (event) => {
+        const message = streamingEventSchema.parse(JSON.parse(event.data as string));
+
+        listeners.filter(({ listener, stream }) => (!stream || message.stream.includes(stream)) && listener(message));
+      };
+
+      this.#socket = {
+        listen: (listener: any, stream?: string) => listeners.push({ listener, stream }),
+        unlisten: (listener: any) => listeners = listeners.filter((value) => value.listener !== listener),
+        subscribe: (stream: string, { list, tag }: { list?: string; tag?: string } = {}) =>
+          ws.send(JSON.stringify({ type: 'subscribe', stream, list, tag })),
+        unsubscribe: (stream: string, { list, tag }: { list?: string; tag?: string } = {}) =>
+          ws.send(JSON.stringify({ type: 'unsubscribe', stream, list, tag })),
+        close: () => {
+          ws.close();
+          this.#socket = undefined;
+        },
+      };
+
+      return this.#socket;
+    },
+  };
+
+  public readonly notifications = {
+    /**
+     * Get all notifications
+     * Notifications concerning the user. This API returns Link headers containing links to the next/previous page. However, the links can also be constructed dynamically using query params and `id` values.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#get}
+     */
+    getNotifications: async (params?: GetNotificationParams) =>
+      this.#paginatedGet<Notification>('/api/v1/notifications', { params }, notificationSchema),
+
+    /**
+     * Get a single notification
+     * View information about a notification with a given ID.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#get-one}
+     */
+    getNotification: async (notificationId: string) => {
+      const response = await this.request(`/api/v1/notifications/${notificationId}`);
+
+      return notificationSchema.parse(response.json);
+    },
+
+    /**
+     * Dismiss all notifications
+     * Clear all notifications from the server.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#clear}
+     */
+    dismissNotifications: async () => {
+      const response = await this.request('/api/v1/notifications/clear', { method: 'POST' });
+
+      return response.json as {};
+    },
+
+    /**
+     * Dismiss a single notification
+     * Dismiss a single notification from the server.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#dismiss}
+     */
+    dismissNotification: async (notificationId: string) => {
+      const response = await this.request(`/api/v1/notifications/${notificationId}/dismiss`, { method: 'POST' });
+
+      return response.json as {};
+    },
+
+    /**
+     * Get the filtering policy for notifications
+     * Notifications filtering policy for the user.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#get-policy}
+     */
+    getNotificationPolicy: async () => {
+      const response = await this.request('/api/v1/notifications/policy');
+
+      return notificationPolicySchema.parse(response.json);
+    },
+
+    /**
+     * Update the filtering policy for notifications
+     * Update the user’s notifications filtering policy.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#update-the-filtering-policy-for-notifications}
+     */
+    updateNotificationPolicy: async (params: UpdateNotificationPolicyRequest) => {
+      const response = await this.request('/api/v1/notifications/policy', { method: 'POST', body: params });
+
+      return notificationPolicySchema.parse(response.json);
+    },
+
+    /**
+     * Get all notification requests
+     * Notification requests for notifications filtered by the user’s policy. This API returns Link headers containing links to the next/previous page.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#get-requests}
+     */
+    getNotificationRequests: async (params?: GetNotificationRequestsParams) =>
+      this.#paginatedGet<Notification>('/api/v1/notifications/requests', { params }, notificationRequestSchema),
+
+    /**
+     * Get a single notification request
+     * View information about a notification request with a given ID.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#get-one-request}
+     */
+    getNotificationRequest: async (notificationRequestId: string) => {
+      const response = await this.request(`/api/v1/notifications/requests/${notificationRequestId}`);
+
+      return notificationRequestSchema.parse(response.json);
+    },
+
+    /**
+     * Accept a single notification request
+     * Accept a notification request, which merges the filtered notifications from that user back into the main notification and accepts any future notification from them.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#accept-request}
+     */
+    acceptNotificationRequest: async (notificationRequestId: string) => {
+      const response = await this.request(`/api/v1/notifications/requests/${notificationRequestId}/dismiss`, { method: 'POST' });
+
+      return response.json as {};
+    },
+
+    /**
+     * Dismiss a single notification request
+     * Dismiss a notification request, which hides it and prevent it from contributing to the pending notification requests count.
+     * @see {@link https://docs.joinmastodon.org/methods/notifications/#dismiss-request}
+     */
+    dismissNotificationRequest: async (notificationRequestId: string) => {
+      const response = await this.request(`/api/v1/notifications/requests/${notificationRequestId}/dismiss`, { method: 'POST' });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly pushNotifications = {
+    /**
+     * Subscribe to push notifications
+     * Add a Web Push API subscription to receive notifications. Each access token can have one push subscription. If you create a new subscription, the old subscription is deleted.
+     * @see {@link https://docs.joinmastodon.org/methods/push/#create}
+     */
+    createSubscription: async (params: CreatePushNotificationsSubscriptionParams) => {
+      const response = await this.request('/api/v1/push/subscription', { method: 'POST', body: params });
+
+      return webPushSubscriptionSchema.parse(response.json);
+    },
+
+    /**
+     * Get current subscription
+     * View the PushSubscription currently associated with this access token.
+     * @see {@link https://docs.joinmastodon.org/methods/push/#get}
+     */
+    getSubscription: async () => {
+      const response = await this.request('/api/v1/push/subscription');
+
+      return webPushSubscriptionSchema.parse(response.json);
+    },
+
+    /**
+     * Change types of notifications
+     * Updates the current push subscription. Only the data part can be updated. To change fundamentals, a new subscription must be created instead.
+     * @see {@link https://docs.joinmastodon.org/methods/push/#update}
+     */
+    updateSubscription: async (params: UpdatePushNotificationsSubscriptionParams) => {
+      const response = await this.request('/api/v1/push/subscription', { method: 'PUT', body: params });
+
+      return webPushSubscriptionSchema.parse(response.json);
+    },
+
+    /**
+     * Remove current subscription
+     * Removes the current Web Push API subscription.
+     * @see {@link https://docs.joinmastodon.org/methods/push/#delete}
+     */
+    deleteSubscription: async () => {
+      const response = await this.request('/api/v1/push/subscription', { method: 'DELETE' });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly search = {
+    /**
+     * Perform a search
+     * @see {@link https://docs.joinmastodon.org/methods/search/#v2}
+     */
+    search: async (q: string, params?: SearchParams) => {
+      const response = await this.request('/api/v2/search', { params: { ...params, q } });
+
+      return searchSchema.parse(response.json);
+    },
+  };
+
+  public readonly instance = {
+    /**
+     * View server information
+     * Obtain general information about the server.
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#v2}
+     */
+    getInstance: async () => {
+      let response = await this.request('/api/v2/instance');
+
+      if (!response.ok) response = await this.request('/api/v1/instance');
+
+      const instance = instanceSchema.readonly().parse(response.json);
+      this.#setInstance(instance);
+
+      return instance;
+    },
+
+    /**
+     * List of connected domains
+     * Domains that this instance is aware of.
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#peers}
+     */
+    getInstancePeers: async () => {
+      const response = await this.request('/api/v1/instance/peers');
+
+      return z.array(z.string()).parse(response.json);
+    },
+
+    /**
+     * Weekly activity
+     * Instance activity over the last 3 months, binned weekly.
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#activity}
+     */
+    getInstanceActivity: async () => {
+      const response = await this.request('/api/v1/instance/activity');
+
+      return z.array(z.object({
+        week: z.string(),
+        statuses: z.coerce.string(),
+        logins: z.coerce.string(),
+        registrations: z.coerce.string(),
+      })).parse(response.json);
+    },
+
+    /**
+     * List of rules
+     * Rules that the users of this service should follow.
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#rules}
+     */
+    getInstanceRules: async () => {
+      const response = await this.request('/api/v1/instance/rules');
+
+      return filteredArray(ruleSchema).parse(response.json);
+    },
+
+    /**
+     * View moderated servers
+     * Obtain a list of domains that have been blocked.
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#domain_blocks}
+     */
+    getInstanceDomainBlocks: async () => {
+      const response = await this.request('/api/v1/instance/rules');
+
+      return filteredArray(domainBlockSchema).parse(response.json);
+    },
+
+    /**
+     * View extended description
+     * Obtain an extended description of this server
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#extended_description}
+     */
+    getInstanceExtendedDescription: async () => {
+      const response = await this.request('/api/v1/instance/extended_description');
+
+      return extendedDescriptionSchema.parse(response.json);
+    },
+
+    /**
+     * View translation languages
+     * Translation language pairs supported by the translation engine used by the server.
+     * @see {@link https://docs.joinmastodon.org/methods/instance/#translation_languages}
+     */
+    getInstanceTranslationLanguages: async () => {
+      const response = await this.request('/api/v1/instance/translation_languages');
+
+      return z.record(z.array(z.string())).parse(response.json);
+    },
+
+    /**
+     * View profile directory
+     * List accounts visible in the directory.
+     * @see {@link https://docs.joinmastodon.org/methods/directory/#get}
+     */
+    profileDirectory: async (params?: ProfileDirectoryParams) => {
+      const response = await this.request('/api/v1/directory', { params });
+
+      return filteredArray(customEmojiSchema).parse(response.json);
+    },
+
+    /**
+     * View all custom emoji
+     * Returns custom emojis that are available on the server.
+     * @see {@link https://docs.joinmastodon.org/methods/custom_emojis/#get}
+     */
+    getCustomEmojis: async () => {
+      const response = await this.request('/api/v1/custom_emojis');
+
+      return filteredArray(customEmojiSchema).parse(response.json);
+    },
+  };
+
+  public readonly trends = {
+    /**
+     * View trending tags
+     * Tags that are being used more frequently within the past week.
+     * @see {@link https://docs.joinmastodon.org/methods/trends/#tags}
+     */
+    getTrendingTags: async (params?: GetTrendingTags) => {
+      const response = await this.request('/api/v1/trends/tags', { params });
+
+      return filteredArray(tagSchema).parse(response.json);
+    },
+
+    /**
+     * View trending statuses
+     * Statuses that have been interacted with more than others.
+     * @see {@link https://docs.joinmastodon.org/methods/trends/#statuses}
+     */
+    getTrendingStatuses: async (params?: GetTrendingStatuses) => {
+      const response = await this.request('/api/v1/trends/statuses', { params });
+
+      return filteredArray(statusSchema).parse(response.json);
+    },
+
+    /**
+     * View trending links
+     * Links that have been shared more than others.
+     * @see {@link https://docs.joinmastodon.org/methods/trends/#links}
+     */
+    getTrendingLinks: async (params?: GetTrendingLinks) => {
+      const response = await this.request('/api/v1/trends/links', { params });
+
+      return filteredArray(trendsLinkSchema).parse(response.json);
+    },
+  };
+
+  public readonly announcements = {
+    /**
+     * View all announcements
+     * See all currently active announcements set by admins.
+     * @see {@link https://docs.joinmastodon.org/methods/announcements/#get}
+     */
+    getAnnouncements: async () => {
+      const response = await this.request('/api/v1/announcements');
+
+      return filteredArray(announcementSchema).parse(response.json);
+    },
+
+    /**
+     * Dismiss an announcement
+     * Allows a user to mark the announcement as read.
+     * @see {@link https://docs.joinmastodon.org/methods/announcements/#dismiss}
+     */
+    dismissAnnouncements: async (announcementId: string) => {
+      const response = await this.request(`/api/v1/announcements/${announcementId}`, { method: 'POST' });
+
+      return response.json as {};
+    },
+
+    /**
+     * Add a reaction to an announcement
+     * React to an announcement with an emoji.
+     * @see {@link https://docs.joinmastodon.org/methods/announcements/#put-reactions}
+     */
+    addAnnouncementReaction: async (announcementId: string, emoji: string) => {
+      const response = await this.request(`/api/v1/announcements/${announcementId}/reactions/${emoji}`, { method: 'PUT' });
+
+      return response.json as {};
+    },
+
+    /**
+     * Remove a reaction from an announcement
+     * Undo a react emoji to an announcement.
+     * @see {@link https://docs.joinmastodon.org/methods/announcements/#delete-reactions}
+     */
+    deleteAnnouncementReaction: async (announcementId: string, emoji: string) => {
+      const response = await this.request(`/api/v1/announcements/${announcementId}/reactions/${emoji}`, { method: 'DELETE' });
+
+      return response.json as {};
+    },
+  };
+
+  public readonly admin = {
+    accounts: {},
+    domainBlocks: {},
+    reports: {},
+    trends: {},
+    canonicalEmailBlocks: {},
+    dimensions: {},
+    domainAllows: {},
+    emailDomainBlocks: {},
+    ipBlocks: {},
+    measures: {},
+    retention: {},
+  };
+
+  public readonly oembed = {
+    /**
+     * Get OEmbed info as JSON
+     * @see {@link https://docs.joinmastodon.org/methods/oembed/#get}
+     */
+    getOembed: async (url: string, maxwidth?: number, maxheight?: number) => {
+      const response = await this.request('/api/oembed', { params: { url, maxwidth, maxheight } });
+
+      return z.object({
+        type: z.string().catch('rich'),
+        version: z.string().catch(''),
+        author_name: z.string().catch(''),
+        author_url: z.string().catch('').catch(''),
+        provider_name: z.string().catch(''),
+        provider_url: z.string().catch(''),
+        cache_age: z.number(),
+        html: z.string(),
+        width: z.number().nullable().catch(null),
+        height: z.number().nullable().catch(null),
+      }).parse(response.json);
+    },
+  };
+
+  /** Routes that are not part of any stable release */
+  public readonly experimental = {
+    admin: {
+    /** @see {@link https://github.com/mastodon/mastodon/pull/19059} */
+      groups: {
+        /** list groups known to the instance. Mimics the interface of `/api/v1/admin/accounts` */
+        getGroups: async (params: AdminGetGroupsParams) => {
+          const response = await this.request('/api/v1/admin/groups', { params });
+
+          return filteredArray(groupSchema).parse(response.json);
+        },
+
+        /** return basic group information */
+        getGroup: async (groupId: string) => {
+          const response = await this.request(`/api/v1/admin/groups/${groupId}`);
+
+          return groupSchema.parse(response.json);
+        },
+
+        /** suspends a group */
+        suspendGroup: async (groupId: string) => {
+          const response = await this.request(`/api/v1/admin/groups/${groupId}/suspend`, { method: 'POST' });
+
+          return groupSchema.parse(response.json);
+        },
+
+        /** lift a suspension */
+        unsuspendGroup: async (groupId: string) => {
+          const response = await this.request(`/api/v1/admin/groups/${groupId}/unsuspend`, { method: 'POST' });
+
+          return groupSchema.parse(response.json);
+        },
+
+        /** deletes an already-suspended group */
+        deleteGroup: async (groupId: string) => {
+          const response = await this.request(`/api/v1/admin/groups/${groupId}`, { method: 'DELETE' });
+
+          return groupSchema.parse(response.json);
+        },
+      },
+    },
+
+    /** @see {@link https://github.com/mastodon/mastodon/pull/19059} */
+    groups: {
+      /** returns an array of `Group` entities the current user is a member of */
+      getGroups: async () => {
+        const response = await this.request('/api/v1/groups');
+
+        return filteredArray(groupSchema).parse(response.json);
+      },
+
+      /** create a group with the given attributes (`display_name`, `note`, `avatar` and `header`). Sets the user who made the request as group administrator */
+      createGroup: async (params: CreateGroupParams) => {
+        const response = await this.request('/api/v1/groups', {
+          method: 'POST',
+          body: params,
+          contentType: params.avatar || params.header ? '' : undefined,
+        });
+
+        return groupSchema.parse(response.json);
+      },
+
+      /** returns the `Group` entity describing a given group */
+      getGroup: async (groupId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}`);
+
+        return groupSchema.parse(response.json);
+      },
+
+      /** update group attributes (`display_name`, `note`, `avatar` and `header`) */
+      updateGroup: async (groupId: string, params: UpdateGroupParams) => {
+        const response = await this.request(`/api/v1/groups/${groupId}`, {
+          method: 'PUT',
+          body: params,
+          contentType: params.avatar || params.header ? '' : undefined,
+        });
+
+        return groupSchema.parse(response.json);
+      },
+
+      /** irreversibly deletes the group */
+      deleteGroup: async (groupId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}`, { method: 'DELETE' });
+
+        return response.json as {};
+      },
+
+      /** Has an optional role attribute that can be used to filter by role (valid roles are `"admin"`, `"moderator"`, `"user"`). */
+      getGroupMemberships: async (groupId: string, role?: GroupMemberRole, params?: GetGroupMembershipsParams) =>
+        this.#paginatedGet<Account>(`/api/v1/groups/${groupId}/memberships`, { params: { ...params, role } }, groupMemberSchema),
+
+      /** returns an array of `Account` entities representing pending requests to join a group */
+      getGroupMembershipRequests: async (groupId: string, params?: GetGroupMembershipRequestsParams) =>
+        this.#paginatedGet<Account>(`/api/v1/groups/${groupId}/membership_requests`, { params }, accountSchema),
+
+      /** accept a pending request to become a group member */
+      acceptGroupMembershipRequest: async (groupId: string, accountId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/membership_requests/${accountId}/authorize`, { method: 'POST' });
+
+        return response.json as {};
+      },
+
+      /** reject a pending request to become a group member */
+      rejectGroupMembershipRequest: async (groupId: string, accountId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/membership_requests/${accountId}/reject`, { method: 'POST' });
+
+        return response.json as {};
+      },
+
+      /** delete a group post (actually marks it as `revoked` if it is a local post) */
+      deleteGroupStatus: async (groupId: string, statusId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/statuses/${statusId}`, { method: 'DELETE' });
+
+        return response.json as {};
+      },
+
+      /** list accounts blocked from interacting with the group */
+      getGroupBlocks: async (groupId: string, params?: GetGroupBlocksParams) =>
+        this.#paginatedGet<Account>(`/api/v1/groups/${groupId}/blocks`, { params }, accountSchema),
+
+      /** block one or more users. If they were in the group, they are also kicked of it */
+      blockGroupUsers: async (groupId: string, accountIds: string[]) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/blocks`, { method: 'POST', params: { account_ids: accountIds } });
+
+        return response.json as {};
+      },
+
+      /** block one or more users. If they were in the group, they are also kicked of it */
+      unblockGroupUsers: async (groupId: string, accountIds: string[]) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/blocks`, { method: 'DELETE', params: { account_ids: accountIds } });
+
+        return response.json as {};
+      },
+
+      /** joins (or request to join) a given group */
+      joinGroup: async (groupId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/join`, { method: 'POST' });
+
+        return groupRelationshipSchema.parse(response.json);
+      },
+
+      /** leaves a given group */
+      leaveGroup: async (groupId: string) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/leave`, { method: 'POST' });
+
+        return groupRelationshipSchema.parse(response.json);
+      },
+
+      /** kick one or more group members */
+      kickGroupUsers: async (groupId: string, accountIds: string[]) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/kick`, { method: 'POST', params: { account_ids: accountIds } });
+
+        return response.json as {};
+      },
+
+      /** promote one or more accounts to role `new_role`. An error is returned if any of those accounts has a higher role than `new_role` already, or if the role is higher than the issuing user's. Valid roles are `admin`, and `moderator` and `user`. */
+      promoteGroupUsers: async (groupId: string, accountIds: string[], role: GroupMemberRole) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/promote`, { method: 'POST', params: { account_ids: accountIds, role } });
+
+        return filteredArray(groupMemberSchema).parse(response.json);
+      },
+
+      /** demote one or more accounts to role `new_role`. Returns an error unless every of the target account has a strictly lower role than the user (you cannot demote someone with the same role as you), or if any target account already has a role lower than `new_role`. Valid roles are `admin`, `moderator` and `user`. */
+      demoteGroupUsers: async (groupId: string, accountIds: string[], role: GroupMemberRole) => {
+        const response = await this.request(`/api/v1/groups/${groupId}/demote`, { method: 'POST', params: { account_ids: accountIds, role } });
+
+        return filteredArray(groupMemberSchema).parse(response.json);
+      },
+    },
+  };
+
+  #setInstance = (instance: Instance) => {
+    this.#instance = instance;
+    this.features = getFeatures(this.#instance);
+  };
+
+  get accessToken(): string | undefined {
+    return this.#accessToken;
+  }
+
+  set accessToken(accessToken: string | undefined)  {
+    if (this.#accessToken === accessToken) return;
+
+    this.#socket?.close();
+    this.#accessToken = accessToken;
+  }
+
+  get instanceInformation() {
+    return this.#instance;
+  }
+
+}
+
+export {
+  PlApiClient,
+  PlApiClient as default,
+};
