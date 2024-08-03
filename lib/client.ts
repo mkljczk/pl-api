@@ -2,6 +2,16 @@ import z from 'zod';
 
 import {
   accountSchema,
+  adminCanonicalEmailBlockSchema,
+  adminCohortSchema,
+  adminDimensionSchema,
+  adminDomainAllowSchema,
+  adminDomainBlockSchema,
+  adminEmailDomainBlockSchema,
+  adminIpBlockSchema,
+  adminMeasureSchema,
+  adminReportSchema,
+  adminTagSchema,
   announcementSchema,
   applicationSchema,
   contextSchema,
@@ -47,9 +57,26 @@ import { type Features, getFeatures } from './features';
 import request, { getNextLink, getPrevLink, type RequestBody } from './request';
 import { buildFullPath } from './utils/url';
 
-import type { Account, Conversation, Instance, Notification, ScheduledStatus, Status, Tag } from './entities';
+import type { Account, AdminMeasure, Conversation, Instance, Notification, ScheduledStatus, Status, Tag } from './entities';
 import type {
+  AdminAccountAction,
+  AdminCreateDomainBlockParams,
+  AdminCreateIpBlockParams,
+  AdminDimension,
+  AdminGetAccountsParams,
+  AdminGetCanonicalEmailBlocks,
+  AdminGetDimensionsParams,
+  AdminGetDomainAllowsParams,
+  AdminGetDomainBlocksParams,
+  AdminGetEmailDomainBlocksParams,
   AdminGetGroupsParams,
+  AdminGetIpBlocksParams,
+  AdminGetMeasuresParams,
+  AdminGetReportsParams,
+  AdminMeasureKey,
+  AdminPerformAccountActionParams,
+  AdminUpdateDomainBlockParams,
+  AdminUpdateReportParams,
   CreateAccountParams,
   CreateApplicationParams,
   CreateFilterParams,
@@ -1907,17 +1934,525 @@ class PlApiClient {
   };
 
   public readonly admin = {
-    accounts: {},
-    domainBlocks: {},
-    reports: {},
-    trends: {},
-    canonicalEmailBlocks: {},
-    dimensions: {},
-    domainAllows: {},
-    emailDomainBlocks: {},
-    ipBlocks: {},
-    measures: {},
-    retention: {},
+    /** Perform moderation actions with accounts. */
+    accounts: {
+      /**
+       * View accounts
+       * View all accounts, optionally matching certain criteria for filtering, up to 100 at a time.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#v2}
+       */
+      getAccounts: async (params: AdminGetAccountsParams) =>
+        this.#paginatedGet('/api/v2/admin/accounts', { params }, accountSchema),
+
+      /**
+       * View a specific account
+       * View admin-level information about the given account.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#get-one}
+       */
+      getAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}`);
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Approve a pending account
+       * Approve the given local account if it is currently pending approval.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#approve}
+       */
+      approveAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/approve`, { method: 'POST' });
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Reject a pending account
+       * Reject the given local account if it is currently pending approval.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#reject}
+       */
+      rejectAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/reject`, { method: 'POST' });
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Delete an account
+       * Permanently delete data for a suspended account.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#delete}
+       */
+      deleteAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}`, { method: 'DELETE' });
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Perform an action against an account
+       * Perform an action against an account and log this action in the moderation history. Also resolves any open reports against this account.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#action}
+       */
+      performAccountAction: async (accountId: string, type: AdminAccountAction, params: AdminPerformAccountActionParams) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/action`, { body: { ...params, type } });
+
+        return response.json as {};
+      },
+
+      /**
+       * Enable a currently disabled account
+       * Re-enable a local account whose login is currently disabled.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#enable}
+       */
+      enableAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/enable`, { method: 'POST' });
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Unsilence an account
+       * Unsilence an account if it is currently silenced.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#unsilence}
+       */
+      unsilenceAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsilence`, { method: 'POST' });
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Unsuspend an account
+       * Unsuspend a currently suspended account.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#unsuspend}
+       */
+      unsuspendAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsuspend`, { method: 'POST' });
+
+        return accountSchema.parse(response.json);
+      },
+
+      /**
+       * Unmark an account as sensitive
+       * Stops marking an account’s posts as sensitive, if it was previously flagged as sensitive.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#unsensitive}
+       */
+      unsensitiveAccount: async (accountId: string) => {
+        const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsensitive`, { method: 'POST' });
+
+        return accountSchema.parse(response.json);
+      },
+    },
+
+    /** Disallow certain domains to federate. */
+    domainBlocks: {
+      /**
+       * List all blocked domains
+       * Show information about all blocked domains.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#get}
+       */
+      getDomainBlocks: (params: AdminGetDomainBlocksParams) =>
+        this.#paginatedGet('/api/v1/admin/domain_blocks', { params }, adminDomainBlockSchema),
+
+      /**
+       * Get a single blocked domain
+       * Show information about a single blocked domain.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#get-one}
+       */
+      getDomainBlock: async (domainBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/domain_blocks/${domainBlockId}`);
+
+        return adminDomainBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Block a domain from federating
+       * Add a domain to the list of domains blocked from federating.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#create}
+       */
+      createDomainBlock: async (domain: string, params?: AdminCreateDomainBlockParams) => {
+        const response = await this.request('/api/v1/admin/domain_blocks', {
+          method: 'POST',
+          body: { ...params, domain },
+        });
+
+        return adminDomainBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Update a domain block
+       * Change parameters for an existing domain block.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#update}
+       */
+      updateDomainBlock: async (domainBlockId: string, params?: AdminUpdateDomainBlockParams) => {
+        const response = await this.request(`/api/v1/admin/domain_blocks/${domainBlockId}`, {
+          method: 'PUT',
+          body: params,
+        });
+
+        return adminDomainBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Remove a domain block
+       * Lift a block against a domain.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#delete}
+       */
+      deleteDomainBlock: async (domainBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/domain_blocks/${domainBlockId}`, {
+          method: 'DELETE',
+        });
+
+        return response.json as {};
+      },
+    },
+
+    /** Perform moderation actions with reports. */
+    reports: {
+      /**
+       * View all reports
+       * View information about all reports.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#get}
+       */
+      getReports: (params: AdminGetReportsParams) =>
+        this.#paginatedGet('/api/v1/admin/reports', { params }, adminReportSchema),
+
+      /**
+       * View a single report
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#get-one}
+       */
+      getReport: async (reportId: string) => {
+        const response = await this.request(`/api/v1/admin/reports/${reportId}`);
+
+        return adminReportSchema.parse(response.json);
+      },
+
+      /**
+       * Update a report
+       * Change metadata for a report.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#update}
+       */
+      updateReport: async (reportId: string, params: AdminUpdateReportParams) => {
+        const response = await this.request(`/api/v1/admin/reports/${reportId}`, { method: 'PUT', body: params });
+
+        return adminReportSchema.parse(response.json);
+      },
+
+      /**
+       * Assign report to self
+       * Claim the handling of this report to yourself.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#assign_to_self}
+       */
+      assignReportToSelf: async (reportId: string) => {
+        const response = await this.request(`/api/v1/admin/reports/${reportId}/assign_to_self`, { method: 'POST' });
+
+        return adminReportSchema.parse(response.json);
+      },
+
+      /**
+       * Unassign report
+       * Unassign a report so that someone else can claim it.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#unassign}
+       */
+      unassignReport: async (reportId: string) => {
+        const response = await this.request(`/api/v1/admin/reports/${reportId}/unassign`, { method: 'POST' });
+
+        return adminReportSchema.parse(response.json);
+      },
+
+      /**
+       * Mark report as resolved
+       * Mark a report as resolved with no further action taken.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#resolve}
+       */
+      resolveReport: async (reportId: string) => {
+        const response = await this.request(`/api/v1/admin/reports/${reportId}/resolve`, { method: 'POST' });
+
+        return adminReportSchema.parse(response.json);
+      },
+
+      /**
+       * Reopen a closed report
+       * Reopen a currently closed report, if it is closed.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#reopen}
+       */
+      reopenReport: async (reportId: string) => {
+        const response = await this.request(`/api/v1/admin/reports/${reportId}/reopen`, { method: 'POST' });
+
+        return adminReportSchema.parse(response.json);
+      },
+    },
+
+    trends: {
+      /**
+       * View trending links
+       * Links that have been shared more than others, including unapproved and unreviewed links.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/trends/#links}
+       */
+      getTrendingLinks: async () => {
+        const response = await this.request('/api/v1/admin/trends/links');
+
+        return filteredArray(trendsLinkSchema).parse(response.json);
+      },
+
+      /**
+       * View trending statuses
+       * Statuses that have been interacted with more than others, including unapproved and unreviewed statuses.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/trends/#statuses}
+       */
+      getTrendingStatuses: async () => {
+        const response = await this.request('/api/v1/admin/trends/statuses');
+
+        return filteredArray(statusSchema).parse(response.json);
+      },
+
+      /**
+       * View trending tags
+       * Tags that are being used more frequently within the past week, including unapproved and unreviewed tags.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/trends/#tags}
+       */
+      getTrendingTags: async () => {
+        const response = await this.request('/api/v1/admin/trends/links');
+
+        return filteredArray(adminTagSchema).parse(response.json);
+      },
+    },
+
+    /** Block certain email addresses by their hash. */
+    canonicalEmailBlocks: {
+      /**
+       * List all canonical email blocks
+       * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#get}
+       */
+      getCanonicalEmailBlocks: async (params: AdminGetCanonicalEmailBlocks) =>
+        this.#paginatedGet('/api/v1/admin/canonical_email_blocks', { params }, adminCanonicalEmailBlockSchema),
+
+      /**
+       * Show a single canonical email block
+       * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#get-one}
+       */
+      getCanonicalEmailBlock: async (canonicalEmailBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/canonical_email_blocks/${canonicalEmailBlockId}`);
+
+        return adminCanonicalEmailBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Test
+       * Canoniocalize and hash an email address.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#test}
+       */
+      testCanonicalEmailBlock: async (email: string) => {
+        const response = await this.request('/api/v1/admin/canonical_email_blocks/test', { method: 'POST', body: { email } });
+
+        return filteredArray(adminCanonicalEmailBlockSchema).parse(response.json);
+      },
+
+      /**
+       * Block a canonical email
+       * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#create}
+       */
+      createCanonicalEmailBlock: async (email: string, canonical_email_hash?: string) => {
+        const response = await this.request('/api/v1/admin/canonical_email_blocks', { method: 'POST', body: { email, canonical_email_hash } });
+
+        return filteredArray(adminCanonicalEmailBlockSchema).parse(response.json);
+      },
+
+      /**
+       * Delete a canonical email block
+       * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#delete}
+       */
+      deleteCanonicalEmailBlock: async (canonicalEmailBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/canonical_email_blocks/${canonicalEmailBlockId}`, { method: 'DELETE' });
+
+        return response.json as {};
+      },
+    },
+
+    /** Obtain qualitative metrics about the server. */
+    dimensions: {
+      /**
+       * Get dimensional data
+       * Obtain information about popularity of certain accounts, servers, languages, etc.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/dimensions/#get}
+       */
+      getDimensions: async (keys: AdminDimension[], params?: AdminGetDimensionsParams) => {
+        const response = await this.request('/api/v1/admin/dimensions', { params: { ...params, keys } });
+
+        return filteredArray(adminDimensionSchema).parse(response.json);
+      },
+    },
+
+    /** Allow certain domains to federate. */
+    domainAllows: {
+      /**
+       * List all allowed domains
+       * Show information about all allowed domains.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_allows/#get}
+       */
+      getDomainAllows: (params: AdminGetDomainAllowsParams) =>
+        this.#paginatedGet('/api/v1/admin/domain_allows', { params }, adminDomainAllowSchema),
+
+      /**
+       * Get a single allowed domain
+       * Show information about a single allowed domain.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_allows/#get-one}
+       */
+      getDomainAllow: async (domainAllowId: string) => {
+        const response = await this.request(`/api/v1/admin/domain_allows/${domainAllowId}`);
+
+        return adminDomainAllowSchema.parse(response.json);
+      },
+
+      /**
+       * Allow a domain to federate
+       * Add a domain to the list of domains allowed to federate, to be used when the instance is in allow-list federation mode.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_allows/#create}
+       */
+      createDomainAllow: async (domain: string) => {
+        const response = await this.request('/api/v1/admin/domain_allows', { method: 'POST', body: { domain } });
+
+        return adminDomainAllowSchema.parse(response.json);
+      },
+
+      /**
+       * Delete an allowed domain
+       * Delete a domain from the allowed domains list.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/domain_allows/#delete}
+       */
+      deleteDomainAllow: async (domainAllowId: string) => {
+        const response = await this.request(`/api/v1/admin/domain_allows/${domainAllowId}`, { method: 'DELETE' });
+
+        return response.json as {};
+      },
+    },
+
+    /** Disallow certain email domains from signing up. */
+    emailDomainBlocks: {
+      /**
+       * List all blocked email domains
+       * Show information about all email domains blocked from signing up.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/email_domain_blocks/#get}
+       */
+      getEmailDomainBlocks: (params: AdminGetEmailDomainBlocksParams) =>
+        this.#paginatedGet('/api/v1/admin/email_domain_blocks', { params }, adminEmailDomainBlockSchema),
+
+      /**
+       * Get a single blocked email domain
+       * Show information about a single email domain that is blocked from signups.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/email_domain_blocks/#get-one}
+       */
+      getEmailDomainBlock: async (emailDomainBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/email_domain_blocks/${emailDomainBlockId}`);
+
+        return adminEmailDomainBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Block an email domain from signups
+       * Add a domain to the list of email domains blocked from signups.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/email_domain_blocks/#create}
+       */
+      createEmailDomainBlock: async (domain: string) => {
+        const response = await this.request('/api/v1/admin/email_domain_blocks', { method: 'POST', body: { domain } });
+
+        return adminEmailDomainBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Delete an email domain block
+       * Lift a block against an email domain.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/email_domain_blocks/#delete}
+       */
+      deleteEmailDomainBlock: async (emailDomainBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/email_domain_blocks/${emailDomainBlockId}`, { method: 'DELETE' });
+
+        return response.json as {};
+      },
+    },
+
+    /** Disallow certain IP address ranges from signing up. */
+    ipBlocks: {
+      /**
+       * List all IP blocks
+       * Show information about all blocked IP ranges.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/ip_blocks/#get}
+       */
+      getIpBlocks: (params?: AdminGetIpBlocksParams) =>
+        this.#paginatedGet('/api/v1/admin/ip_blocks', { params }, adminIpBlockSchema),
+
+      /**
+       * Get a single IP block
+       * Show information about a single IP block.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/ip_blocks/#get-one}
+       */
+      getIpBlock: async (ipBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/ip_blocks/${ipBlockId}`);
+
+        return adminIpBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Block an IP address range from signing up
+       * Add an IP address range to the list of IP blocks.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/ip_blocks/#create}
+       */
+      createIpBlock: async (params: AdminCreateIpBlockParams) => {
+        const response = await this.request('/api/v1/admin/ip_blocks', { method: 'POST', body: params });
+
+        return adminIpBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Update a domain block
+       * Change parameters for an existing IP block.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/ip_blocks/#update}
+       */
+      updateIpBlock: async (ipBlockId: string, params: AdminCreateIpBlockParams) => {
+        const response = await this.request(`/api/v1/admin/ip_blocks/${ipBlockId}`, { method: 'POST', body: params });
+
+        return adminIpBlockSchema.parse(response.json);
+      },
+
+      /**
+       * Delete an IP block
+       * Lift a block against an IP range.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/ip_blocks/#delete}
+       */
+      deleteIpBlock: async (ipBlockId: string) => {
+        const response = await this.request(`/api/v1/admin/ip_blocks/${ipBlockId}`, { method: 'DELETE' });
+
+        return response.json as {};
+      },
+    },
+
+    /** Obtain quantitative metrics about the server. */
+    measures: {
+      /**
+       * Get measurable data
+       * Obtain quantitative metrics about the server.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/measures/#get}
+       */
+      getMeasures: async (keys: AdminMeasureKey[], start_at: string, end_at: string, params: AdminGetMeasuresParams) => {
+        const response = await this.request('/api/v1/admin/measures', { params: { ...params, keys, start_at, end_at } });
+
+        return filteredArray(adminMeasureSchema).parse(response.json);
+      },
+    },
+
+    /** Show retention data over time. */
+    retention: {
+      /**
+       * Calculate retention data
+       * Generate a retention data report for a given time period and bucket.
+       * @see {@link https://docs.joinmastodon.org/methods/admin/retention/#create}
+       */
+      getRetention: async (start_at: string, end_at: string, frequency: 'day' | 'month') => {
+        const response = await this.request('/api/v1/admin/retention', { params: { start_at, end_at, frequency } });
+
+        return adminCohortSchema.parse(response.json);
+      },
+    },
   };
 
   public readonly oembed = {

@@ -1,22 +1,13 @@
 import z from 'zod';
 
 import { customEmojiSchema } from './custom-emoji';
+import { roleSchema } from './role';
 import { dateSchema, filteredArray } from './utils';
-
-const hexSchema = z.string().regex(/^#[a-f0-9]{6}$/i);
 
 const fieldSchema = z.object({
   name: z.string(),
   value: z.string(),
   verified_at: z.string().datetime({ offset: true }).nullable().catch(null),
-});
-
-const roleSchema = z.object({
-  id: z.string().catch(''),
-  name: z.string().catch(''),
-  color: hexSchema.catch(''),
-  permissions: z.string().catch(''),
-  highlighted: z.boolean().catch(true),
 });
 
 const baseAccountSchema = z.object({

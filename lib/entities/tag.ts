@@ -11,7 +11,7 @@ const tagSchema = z.object({
   name: z.string().min(1),
   url: z.string().url().catch(''),
   history: z.array(historySchema).nullable().catch(null),
-  following: z.boolean().catch(false),
+  following: z.boolean().optional().catch(undefined),
 });
 
 type Tag = z.infer<typeof tagSchema>;
