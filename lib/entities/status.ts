@@ -1,7 +1,9 @@
+import pick from 'lodash/pick';
 import { z } from 'zod';
 
 import { accountSchema } from './account';
 import { customEmojiSchema } from './custom-emoji';
+import { emojiReactionSchema } from './emoji-reaction';
 import { filterResultSchema } from './filter-result';
 import { mediaAttachmentSchema } from './media-attachment';
 import { mentionSchema } from './mention';
@@ -11,6 +13,26 @@ import { tagSchema } from './tag';
 import { dateSchema, filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
+
+const statusEventSchema = z.object({
+  name: z.string().catch(''),
+  start_time: z.string().datetime().nullable().catch(null),
+  end_time: z.string().datetime().nullable().catch(null),
+  join_mode: z.enum(['free', 'restricted', 'invite']).nullable().catch(null),
+  participants_count: z.number().catch(0),
+  location: z.object({
+    name: z.string().catch(''),
+    url: z.string().url().catch(''),
+    latitude: z.number().catch(0),
+    longitude: z.number().catch(0),
+    street: z.string().catch(''),
+    postal_code: z.string().catch(''),
+    locality: z.string().catch(''),
+    region: z.string().catch(''),
+    country: z.string().catch(''),
+  }).nullable().catch(null),
+  join_state: z.enum(['pending', 'reject', 'accept']).nullable().catch(null),
+});
 
 /** @see {@link https://docs.joinmastodon.org/entities/Status/} */
 const baseStatusSchema = z.object({
@@ -47,11 +69,51 @@ const baseStatusSchema = z.object({
   bookmarked: z.coerce.boolean(),
   pinned: z.coerce.boolean(),
   filtered: filteredArray(filterResultSchema),
+
+  local: z.boolean().optional().catch(undefined),
+  conversation_id: z.string().optional().catch(undefined),
+  direct_conversation_id: z.string().optional().catch(undefined),
+  in_reply_to_account_acct: z.string().optional().catch(undefined),
+  expires_at: z.string().datetime({ offset: true }).optional().catch(undefined),
+  thread_muted: z.boolean().optional().catch(undefined),
+  emoji_reactions: filteredArray(emojiReactionSchema),
+  parent_visible: z.boolean().optional().catch(undefined),
+  pinned_at: z.string().datetime({ offset: true }).nullable().catch(null),
+  quote_visible: z.boolean().optional().catch(undefined),
+  quote_url: z.string().optional().catch(undefined),
+  quotes_count: z.number().catch(0),
+  bookmark_folder: z.string().nullable().catch(null),
+
+  event: statusEventSchema.nullable().catch(null),
 });
 
-const statusSchema = baseStatusSchema.extend({
+const statusSchema = z.preprocess((status: any) => {
+  status = {
+    ...(pick(status.pleroma || {}, [
+      'quote',
+      'local',
+      'conversation_id',
+      'direct_conversation_id',
+      'in_reply_to_account_acct',
+      'expires_at',
+      'thread_muted',
+      'emoji_reactions',
+      'parent_visible',
+      'pinned_at',
+      'quotes_count',
+      'bookmark_folder',
+
+      'event',
+    ])),
+    ...status,
+  };
+
+  return status;
+}, baseStatusSchema.extend({
   reblog: z.lazy(() => baseStatusSchema).nullable().catch(null),
-});
+
+  quote: z.lazy(() => baseStatusSchema).nullable().catch(null),
+}));
 
 type Status = Resolve<z.infer<typeof statusSchema>>;
 

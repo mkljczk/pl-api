@@ -1,4 +1,4 @@
-import { PaginationParams } from './common';
+import type { PaginationParams } from './common';
 
 interface AdminGetAccountsParams extends PaginationParams {
   /** String. Filter for `local` or `remote` accounts. */
@@ -73,7 +73,7 @@ interface AdminUpdateReportParams {
 
 type AdminGetCanonicalEmailBlocks = PaginationParams;
 
-type AdminDimension = 'languages' | 'sources' | 'servers' | 'space_usage' | 'software_versions' | 'tag_servers' | 'tag_languages' | 'instance_accounts' | 'instance_languages';
+type AdminDimensionKey = 'languages' | 'sources' | 'servers' | 'space_usage' | 'software_versions' | 'tag_servers' | 'tag_languages' | 'instance_accounts' | 'instance_languages';
 
 interface AdminGetDimensionsParams {
   /** String (ISO 8601 Datetime). The start date for the time period. If a time is provided, it will be ignored. */
@@ -173,7 +173,7 @@ export type {
   AdminGetReportsParams,
   AdminUpdateReportParams,
   AdminGetCanonicalEmailBlocks,
-  AdminDimension,
+  AdminDimensionKey,
   AdminGetDimensionsParams,
   AdminGetDomainAllowsParams,
   AdminGetEmailDomainBlocksParams,

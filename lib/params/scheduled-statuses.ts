@@ -1,4 +1,4 @@
-import { PaginationParams } from './common';
+import type { PaginationParams } from './common';
 
 type GetScheduledStatusesParams = PaginationParams;
 

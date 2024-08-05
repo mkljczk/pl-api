@@ -2,11 +2,15 @@ import { z } from 'zod';
 
 import { dateSchema } from './utils';
 
-const markerSchema = z.object({
+const markerSchema = z.preprocess((marker: any) => ({
+  unread_count: marker.pleroma?.unread_count,
+  ...marker,
+}), z.object({
   last_read_id: z.string(),
   version: z.number().int(),
   updated_at: dateSchema,
-});
+  unread_count: z.number().int().optional().catch(undefined),
+}));
 
 /** @see {@link https://docs.joinmastodon.org/entities/Marker/} */
 type Marker = z.infer<typeof markerSchema>;

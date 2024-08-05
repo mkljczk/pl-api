@@ -1,4 +1,4 @@
-import { PaginationParams } from './common';
+import type { PaginationParams } from './common';
 
 interface CreateListParams {
   /** String. The title of the list to be created. */

@@ -27,6 +27,8 @@ const scheduledStatusSchema = z.object({
     scheduled_at: z.null().catch(null),
     idempotency: z.string().nullable().catch(null),
     with_rate_limit: z.boolean(),
+
+    expires_in: z.number().nullable().catch(null),
   }),
   media_attachments: filteredArray(mediaAttachmentSchema),
 });

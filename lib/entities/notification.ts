@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { accountSchema } from './account';
 import { accountWarningSchema } from './account-warning';
+import { chatMessageSchema } from './chat-message';
+import { emojiReactionSchema } from './emoji-reaction';
 import { relationshipSeveranceEventSchema } from './relationship-severance-event';
 import { reportSchema } from './report';
 import { statusSchema } from './status';
@@ -38,14 +40,38 @@ const moderationWarningNotificationSchema = baseNotificationSchema.extend({
   moderation_warning: accountWarningSchema,
 });
 
+const moveNotificationSchema = baseNotificationSchema.extend({
+  type: z.literal('move'),
+  target: accountSchema,
+});
+
+const emojiReactionNotificationSchema = baseNotificationSchema.extend({
+  type: z.literal('emoji_reaction'),
+  emoji: emojiReactionSchema,
+  status: statusSchema,
+});
+
+const chatMentionNotificationSchema = baseNotificationSchema.extend({
+  type: z.literal('chat_mention'),
+  chat_message: chatMessageSchema,
+});
+
 /** @see {@link https://docs.joinmastodon.org/entities/Notification/} */
-const notificationSchema = z.discriminatedUnion('type', [
+const notificationSchema = z.preprocess((notification: any) => ({
+  type: notification.type === 'pleroma:report'
+    ? 'admin.report'
+    : notification.type?.replace(/^pleroma:/, ''),
+  ...notification,
+}), z.discriminatedUnion('type', [
   accountNotificationSchema,
   statusNotificationSchema,
   reportNotificationSchema,
   severedRelationshipNotificationSchema,
   moderationWarningNotificationSchema,
-]);
+  moveNotificationSchema,
+  emojiReactionNotificationSchema,
+  chatMentionNotificationSchema,
+]));
 
 type Notification = z.infer<typeof notificationSchema>;
 

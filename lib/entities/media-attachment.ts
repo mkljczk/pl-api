@@ -1,6 +1,8 @@
 import { isBlurhashValid } from 'blurhash';
 import { z } from 'zod';
 
+import { mimeSchema } from './utils';
+
 const blurhashSchema = z.string().superRefine((value, ctx) => {
   const r = isBlurhashValid(value);
 
@@ -20,6 +22,8 @@ const baseAttachmentSchema = z.object({
   remote_url: z.string().url().nullable().catch(null),
   description: z.string().catch(''),
   blurhash: blurhashSchema.nullable().catch(null),
+
+  mime_type: mimeSchema.nullable().catch(null),
 });
 
 const imageMetaSchema = z.object({
@@ -84,7 +88,10 @@ const unknownAttachmentSchema = baseAttachmentSchema.extend({
 });
 
 /** @see {@link https://docs.joinmastodon.org/entities/MediaAttachment} */
-const mediaAttachmentSchema = z.discriminatedUnion('type', [
+const mediaAttachmentSchema = z.preprocess((data: any) => ({
+  mime_type: data.pleroma?.mime_type,
+  ...data,
+}), z.discriminatedUnion('type', [
   imageAttachmentSchema,
   videoAttachmentSchema,
   gifvAttachmentSchema,
@@ -96,7 +103,7 @@ const mediaAttachmentSchema = z.discriminatedUnion('type', [
   }
 
   return attachment;
-});
+}));
 
 type MediaAttachment = z.infer<typeof mediaAttachmentSchema>;
 

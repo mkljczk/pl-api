@@ -2,6 +2,7 @@ import z from 'zod';
 
 import {
   accountSchema,
+  adminAccountSchema,
   adminCanonicalEmailBlockSchema,
   adminCohortSchema,
   adminDimensionSchema,
@@ -14,11 +15,16 @@ import {
   adminTagSchema,
   announcementSchema,
   applicationSchema,
+  backupSchema,
+  bookmarkFolderSchema,
+  chatMessageSchema,
+  chatSchema,
   contextSchema,
   conversationSchema,
   credentialAccountSchema,
   customEmojiSchema,
   domainBlockSchema,
+  emojiReactionSchema,
   extendedDescriptionSchema,
   familiarFollowersSchema,
   featuredTagSchema,
@@ -30,6 +36,7 @@ import {
   groupSchema,
   instanceSchema,
   listSchema,
+  locationSchema,
   markersSchema,
   mediaAttachmentSchema,
   notificationPolicySchema,
@@ -57,12 +64,29 @@ import { type Features, getFeatures } from './features';
 import request, { getNextLink, getPrevLink, type RequestBody } from './request';
 import { buildFullPath } from './utils/url';
 
-import type { Account, AdminMeasure, Conversation, Instance, Notification, ScheduledStatus, Status, Tag } from './entities';
+import type {
+  Account,
+  AdminAccount,
+  AdminCanonicalEmailBlock,
+  AdminDomainAllow,
+  AdminDomainBlock,
+  AdminEmailDomainBlock,
+  AdminIpBlock,
+  AdminReport,
+  Chat,
+  ChatMessage,
+  Conversation,
+  Instance,
+  Notification,
+  ScheduledStatus,
+  Status,
+  Tag,
+} from './entities';
 import type {
   AdminAccountAction,
   AdminCreateDomainBlockParams,
   AdminCreateIpBlockParams,
-  AdminDimension,
+  AdminDimensionKey,
   AdminGetAccountsParams,
   AdminGetCanonicalEmailBlocks,
   AdminGetDimensionsParams,
@@ -79,21 +103,32 @@ import type {
   AdminUpdateReportParams,
   CreateAccountParams,
   CreateApplicationParams,
+  CreateBookmarkFolderParams,
+  CreateChatMessageParams,
+  CreateEventParams,
   CreateFilterParams,
   CreateGroupParams,
   CreateListParams,
   CreatePushNotificationsSubscriptionParams,
   CreateStatusParams,
+  EditEventParams,
   EditStatusParams,
   FollowAccountParams,
+  GetAccountEndorsementsParams,
+  GetAccountFavouritesParams,
   GetAccountFollowersParams,
   GetAccountFollowingParams,
+  GetAccountParams,
   GetAccountStatusesParams,
   GetBlocksParams,
   GetBookmarksParams,
+  GetChatMessagesParams,
+  GetChatsParams,
   GetConversationsParams,
   GetDomainBlocksParams,
   GetEndorsementsParams,
+  GetEventParticipationRequestsParams,
+  GetEventParticipationsParams,
   GetFavouritedByParams,
   GetFavouritesParams,
   GetFollowedTagsParams,
@@ -101,6 +136,7 @@ import type {
   GetGroupBlocksParams,
   GetGroupMembershipRequestsParams,
   GetGroupMembershipsParams,
+  GetJoinedEventsParams,
   GetListAccountsParams,
   GetMutesParams,
   GetNotificationParams,
@@ -111,6 +147,7 @@ import type {
   GetStatusContextParams,
   GetStatusesParams,
   GetStatusParams,
+  GetStatusQuotesParams,
   GetTokenParams,
   GetTrendingLinks,
   GetTrendingStatuses,
@@ -128,6 +165,7 @@ import type {
   SaveMarkersParams,
   SearchAccountParams,
   SearchParams,
+  UpdateBookmarkFolderParams,
   UpdateCredentialsParams,
   UpdateFilterParams,
   UpdateGroupParams,
@@ -260,53 +298,12 @@ class PlApiClient {
 
   public readonly accounts = {
     /**
-     * Register an account
-     * Creates a user and account records. Returns an account access token for the app that initiated the request. The app should save this token for later, and should wait for the user to confirm their account by clicking a link in their email inbox.
-     * Requires `features.accountCreation`
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#create}
-     */
-    createAccount: async (params: CreateAccountParams) => {
-      const response = await this.request('/api/v1/accounts', {
-        method: 'POST',
-        body: params,
-      });
-
-      return tokenSchema.parse(response.json);
-    },
-
-    /**
-     * Verify account credentials
-     * Test to make sure that the user token works.
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#verify_credentials}
-     */
-    verifyCredentials: async () => {
-      const response = await this.request('/api/v1/accounts/verify_credentials');
-
-      return credentialAccountSchema.parse(response.json);
-    },
-
-    /**
-     * Update account credentials
-     * Update the user’s display and preferences.
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#update_credentials}
-     */
-    updateCredentials: async (params: UpdateCredentialsParams) => {
-      const response = await this.request('/api/v1/accounts/update_credentials', {
-        method: 'PATCH',
-        contentType: params.avatar || params.header ? '' : undefined,
-        body: params,
-      });
-
-      return credentialAccountSchema.parse(response.json);
-    },
-
-    /**
      * Get account
      * View information about a profile.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#get}
      */
-    getAccount: async (accountId: string) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}`);
+    getAccount: async (accountId: string, params?: GetAccountParams) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}`, { params });
 
       return accountSchema.parse(response.json);
     },
@@ -403,50 +400,6 @@ class PlApiClient {
     },
 
     /**
-     * Block account
-     * Block the given account. Clients should filter statuses from this account if received (e.g. due to a boost in the Home timeline)
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#block}
-     */
-    blockAccount: async (accountId: string) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}/block`, { method: 'POST' });
-
-      return relationshipSchema.parse(response.json);
-    },
-
-    /**
-     * Unblock account
-     * Unblock the given account.
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unblock}
-     */
-    unblockAccount: async (accountId: string) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}/unblock`, { method: 'POST' });
-
-      return relationshipSchema.parse(response.json);
-    },
-
-    /**
-     * Mute account
-     * Mute the given account. Clients should filter statuses and notifications from this account, if received (e.g. due to a boost in the Home timeline).
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#mute}
-     */
-    muteAccount: async (accountId: string, params?: MuteAccountParams) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}/mute`, { method: 'POST', params });
-
-      return relationshipSchema.parse(response.json);
-    },
-
-    /**
-     * Unmute account
-     * Unmute the given account.
-     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unmute}
-     */
-    unmuteAccount: async (accountId: string) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}/unmute`, { method: 'POST' });
-
-      return relationshipSchema.parse(response.json);
-    },
-
-    /**
      * Feature account on your profile
      * Add the given account to the user’s featured profiles.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#pin}
@@ -525,6 +478,50 @@ class PlApiClient {
     },
 
     /**
+     * File a report
+     * @see {@link https://docs.joinmastodon.org/methods/reports/#post}
+     */
+    reportAccount: async (accountId: string, params: ReportAccountParams) => {
+      const response = await this.request('/api/v1/reports', {
+        method: 'POST',
+        body: { ...params, account_id: accountId },
+      });
+
+      return reportSchema.parse(response.json);
+    },
+
+    /**
+     * Endorsements
+     * Returns endorsed accounts
+     * Requires `features.accountEndorsements`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromaaccountsidendorsements}
+     */
+    getAccountEndorsements: async (accountId: string, params: GetAccountEndorsementsParams) => {
+      const response = await this.request(`/api/v1/pleroma/accounts/${accountId}/endorsements`, { params });
+
+      return filteredArray(accountSchema).parse(response.json);
+    },
+
+    /**
+     * Birthday reminders
+     * Birthday reminders about users you follow.
+     * Requires `features.birthdays`.
+     */
+    getBirthdays: async (day: number, month: number) => {
+      const response = await this.request('/api/v1/pleroma/birthdays', { params: { day, month } });
+
+      return filteredArray(accountSchema).parse(response.json);
+    },
+
+    /**
+     * Returns favorites timeline of any user
+     */
+    getAccountFavourites: async (accountId: string, params?: GetAccountFavouritesParams) =>
+      this.#paginatedGet<Status>(`/api/v1/pleroma/accounts/${accountId}/favourites`, { params }, statusSchema),
+  };
+
+  public readonly myAccount = {
+    /**
      * View bookmarked statuses
      * Statuses the user has bookmarked.
      * @see {@link https://docs.joinmastodon.org/methods/bookmarks/#get}
@@ -539,19 +536,6 @@ class PlApiClient {
      */
     getFavourites: async (params?: GetFavouritesParams) =>
       this.#paginatedGet<Status>('/api/v1/favourites', { params }, statusSchema),
-
-    /**
-     * File a report
-     * @see {@link https://docs.joinmastodon.org/methods/reports/#post}
-     */
-    reportAccount: async (accountId: string, params: ReportAccountParams) => {
-      const response = await this.request('/api/v1/reports', {
-        method: 'POST',
-        body: { ...params, account_id: accountId },
-      });
-
-      return reportSchema.parse(response.json);
-    },
 
     /**
      * View pending follow requests
@@ -639,17 +623,6 @@ class PlApiClient {
     },
 
     /**
-     * View user preferences
-     * Preferences defined by the user in their account settings.
-     * @see {@link https://docs.joinmastodon.org/methods/preferences/#get}
-     */
-    getPreferences: async () => {
-      const response = await this.request('/api/v1/preferences');
-
-      return response.json as Record<string, any>;
-    },
-
-    /**
      * View all followed tags
      * List your followed hashtags.
      * Requires `features.followHashtags`.
@@ -717,9 +690,99 @@ class PlApiClient {
 
       return response.json as {};
     },
+
+    /**
+     * Gets user bookmark folders
+     * Requires `features.bookmarkFolders`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apiv1pleromabookmark_folders}
+     */
+    getBookmarkFolders: async () => {
+      const response = await this.request('/api/v1/pleroma/bookmark_folders');
+
+      return filteredArray(bookmarkFolderSchema).parse(response.json);
+    },
+
+    /**
+     * Creates a bookmark folder
+     * Requires `features.bookmarkFolders`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#post-apiv1pleromabookmark_folders} 
+     */
+    createBookmarkFolder: async (params: CreateBookmarkFolderParams) => {
+      const response = await this.request('/api/v1/pleroma/bookmark_folders', { method: 'POST', body: params });
+
+      return bookmarkFolderSchema.parse(response.json);
+    },
+
+    /**
+     * Updates a bookmark folder
+     * Requires `features.bookmarkFolders`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#patch-apiv1pleromabookmark_foldersid}
+     */
+    updateBookmarkFolder: async (bookmarkFolderId: string, params: UpdateBookmarkFolderParams) => {
+      const response = await this.request(`/api/v1/pleroma/bookmark_folders/${bookmarkFolderId}`, { method: 'PATCH', body: params });
+
+      return bookmarkFolderSchema.parse(response.json);
+    },
+
+    /**
+     * Deletes a bookmark folder
+     * Requires `features.bookmarkFolders`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apiv1pleromabookmark_foldersid} 
+     */
+    deleteBookmarkFolder: async (bookmarkFolderId: string) => {
+      const response = await this.request(`/api/v1/pleroma/bookmark_folders/${bookmarkFolderId}`, { method: 'DELETE' });
+
+      return bookmarkFolderSchema.parse(response.json);
+    },
   };
 
-  public readonly profiles = {
+  public readonly settings = {
+    /**
+     * Register an account
+     * Creates a user and account records. Returns an account access token for the app that initiated the request. The app should save this token for later, and should wait for the user to confirm their account by clicking a link in their email inbox.
+     * Requires `features.accountCreation`
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#create}
+     */
+    createAccount: async (params: CreateAccountParams) => {
+      const response = await this.request('/api/v1/accounts', {
+        method: 'POST',
+        body: { language: params.locale, ...params },
+      });
+
+      return tokenSchema.parse(response.json);
+    },
+
+    /**
+     * Verify account credentials
+     * Test to make sure that the user token works.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#verify_credentials}
+     */
+    verifyCredentials: async () => {
+      const response = await this.request('/api/v1/accounts/verify_credentials');
+
+      return credentialAccountSchema.parse(response.json);
+    },
+
+    /**
+     * Update account credentials
+     * Update the user’s display and preferences.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#update_credentials}
+     */
+    updateCredentials: async (params: UpdateCredentialsParams) => {
+      if (params.background_image) (params as any).pleroma_background_image = params.background_image;
+      if (params.settings_store) (params as any).pleroma_settings_store = params.settings_store;
+      delete (params as any).pleroma_background_image;
+      delete (params as any).pleroma_settings_store;
+
+      const response = await this.request('/api/v1/accounts/update_credentials', {
+        method: 'PATCH',
+        contentType: params.avatar || params.header ? '' : undefined,
+        body: params,
+      });
+
+      return credentialAccountSchema.parse(response.json);
+    },
+
     /**
      * Delete profile avatar
      * Deletes the avatar associated with the user’s profile.
@@ -741,9 +804,120 @@ class PlApiClient {
 
       return credentialAccountSchema.parse(response.json);
     },
+
+    /**
+     * View user preferences
+     * Preferences defined by the user in their account settings.
+     * @see {@link https://docs.joinmastodon.org/methods/preferences/#get}
+     */
+    getPreferences: async () => {
+      const response = await this.request('/api/v1/preferences');
+
+      return response.json as Record<string, any>;
+    },
+
+    /**
+     * Create a user backup archive
+     * Requires `features.accountBackups`.
+     */
+    createBackup: async () => {
+      const response = await this.request('/api/v1/pleroma/backups', { method: 'POST' });
+
+      return backupSchema.parse(response.json);
+    },
+
+    /**
+     * List user backups
+     * Requires `features.accountBackups`.
+     */
+    getBackups: async () => {
+      const response = await this.request('/api/v1/pleroma/backups');
+
+      return filteredArray(backupSchema).parse(response.json);
+    },
+
+    /**
+     * Get aliases of the current account
+     * Requires `features.manageAccountAliases`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-aliases-of-the-current-account}
+     */
+    getAccountAliases: async () => {
+      const response = await this.request('/api/v1/pleroma/aliases');
+
+      return z.object({ aliases: filteredArray(z.string()) }).parse(response.json);
+    },
+
+    /**
+     * Add alias to the current account
+     * Requires `features.manageAccountAliases`.
+     * @param alias - the nickname of the alias to add, e.g. foo@example.org.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#add-alias-to-the-current-account}
+     */
+    addAccountAlias: async (alias: string) => {
+      const response = await this.request('/api/v1/pleroma/aliases', { method: 'PUT', body: { alias } });
+
+      return z.object({ status: z.literal('success') }).parse(response.json);
+    },
+
+    /**
+     * Delete alias from the current account
+     * Requires `features.manageAccountAliases`.
+     * @param alias - the nickname of the alias to add, e.g. foo@example.org.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-alias-from-the-current-account}
+     */
+    deleteAccountAlias: async (alias: string) => {
+      const response = await this.request('/api/v1/pleroma/aliases', { method: 'DELETE', body: { alias } });
+
+      return z.object({ status: z.literal('success') }).parse(response.json);
+    },
+
   };
 
   public readonly filtering = {
+    /**
+     * Block account
+     * Block the given account. Clients should filter statuses from this account if received (e.g. due to a boost in the Home timeline)
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#block}
+     */
+    blockAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/block`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Unblock account
+     * Unblock the given account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unblock}
+     */
+    unblockAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/unblock`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Mute account
+     * Mute the given account. Clients should filter statuses and notifications from this account, if received (e.g. due to a boost in the Home timeline).
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#mute}
+     */
+    muteAccount: async (accountId: string, params?: MuteAccountParams) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/mute`, { method: 'POST', params });
+
+      return relationshipSchema.parse(response.json);
+    },
+
+    /**
+     * Unmute account
+     * Unmute the given account.
+     * @see {@link https://docs.joinmastodon.org/methods/accounts/#unmute}
+     */
+    unmuteAccount: async (accountId: string) => {
+      const response = await this.request(`/api/v1/accounts/${accountId}/unmute`, { method: 'POST' });
+
+      return relationshipSchema.parse(response.json);
+    },
+
     /**
      * View muted accounts
      * Accounts the user has muted.
@@ -1146,8 +1320,8 @@ class PlApiClient {
      * Privately bookmark a status.
      * @see {@link https://docs.joinmastodon.org/methods/statuses/#bookmark}
      */
-    bookmarkStatus: async (statusId: string) => {
-      const response = await this.request(`/api/v1/statuses/${statusId}/bookmark`, { method: 'POST' });
+    bookmarkStatus: async (statusId: string, folderId?: string) => {
+      const response = await this.request(`/api/v1/statuses/${statusId}/bookmark`, { method: 'POST', body: { folder_id: folderId } });
 
       return statusSchema.parse(response.json);
     },
@@ -1239,6 +1413,48 @@ class PlApiClient {
 
       return statusSourceSchema.parse(response.json);
     },
+
+    /**
+     * Get an object of emoji to account mappings with accounts that reacted to the post
+     * Requires `features.emojiReacts`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apiv1pleromastatusesidreactions}
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apiv1pleromastatusesidreactionsemoji}
+     */
+    getStatusReactions: async (statusId: string, emoji?: string) => {
+      const response = await this.request(`/api/v1/pleroma/statuses/${statusId}/reactions${emoji ? `/${emoji}` : ''}`);
+
+      return filteredArray(emojiReactionSchema).parse(response.json);
+    },
+
+    /**
+     * React to a post with a unicode emoji
+     * Requires `features.emojiReacts`.
+     * Using custom emojis requires `features.customEmojiReacts`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#put-apiv1pleromastatusesidreactionsemoji}
+     */
+    createStatusReaction: async (statusId: string, emoji: string) => {
+      const response = await this.request(`/api/v1/pleroma/statuses/${statusId}/reactions/${emoji}`, { method: 'PUT' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Remove a reaction to a post with a unicode emoji¶
+     * Requires `features.emojiReacts`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apiv1pleromastatusesidreactionsemoji}
+     */
+    deleteStatusReaction: async (statusId: string, emoji: string) => {
+      const response = await this.request(`/api/v1/pleroma/statuses/${statusId}/reactions/${emoji}`, { method: 'DELETE' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * View quotes for a given status
+     * Requires `features.quotePosts`.
+     */
+    getStatusQuotes: async (statusId: string, params?: GetStatusQuotesParams) =>
+      this.#paginatedGet<Status>(`/api/v1/pleroma/statuses/${statusId}/quotes`, { params }, statusSchema),
   };
 
   public readonly media = {
@@ -1355,7 +1571,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/timelines/#public}
      */
     publicTimeline: (params?: PublicTimelineParams) =>
-      this.#paginatedGet<Status>('/api/v1/timeline/public', { params }, statusSchema),
+      this.#paginatedGet<Status>('/api/v1/timelines/public', { params }, statusSchema),
 
     /**
      * View hashtag timeline
@@ -1363,7 +1579,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/timelines/#tag}
      */
     hashtagTimeline: (hashtag: string, params?: HashtagTimelineParams) =>
-      this.#paginatedGet<Status>(`/api/v1/timeline/tag/${hashtag}`, { params }, statusSchema),
+      this.#paginatedGet<Status>(`/api/v1/timelines/tag/${hashtag}`, { params }, statusSchema),
 
     /**
      * View home timeline
@@ -1371,7 +1587,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/timelines/#home}
      */
     homeTimeline: (params?: HomeTimelineParams) =>
-      this.#paginatedGet<Status>('/api/v1/timeline/home', { params }, statusSchema),
+      this.#paginatedGet<Status>('/api/v1/timelines/home', { params }, statusSchema),
 
     /**
      * View link timeline
@@ -1379,7 +1595,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/timelines/#link}
      */
     linkTimeline: (url: string, params?: HashtagTimelineParams) =>
-      this.#paginatedGet<Status>('/api/v1/timeline/link', { params: { ...params, url } }, statusSchema),
+      this.#paginatedGet<Status>('/api/v1/timelines/link', { params: { ...params, url } }, statusSchema),
 
     /**
      * View list timeline
@@ -1387,7 +1603,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/timelines/#list}
      */
     listTimeline: (listId: string, params?: ListTimelineParams) =>
-      this.#paginatedGet<Status>(`/api/v1/timeline/list/${listId}`, { params }, statusSchema),
+      this.#paginatedGet<Status>(`/api/v1/timelines/list/${listId}`, { params }, statusSchema),
 
     /**
      * View all conversations
@@ -1549,7 +1765,7 @@ class PlApiClient {
     connect: async () => {
       if (this.#socket) return this.#socket;
 
-      const path = buildFullPath('/api/v1/streaming', this.#instance?.configuration.urls.streaming);
+      const path = buildFullPath('/api/v1/streaming', this.#instance?.configuration.urls.streaming, { access_token: this.accessToken });
       const ws = new WebSocket(path, this.accessToken as any);
 
       let listeners: Array<{ listener: any; stream?: string }> = [];
@@ -1681,6 +1897,20 @@ class PlApiClient {
 
       return response.json as {};
     },
+
+    /**
+     * An endpoint to delete multiple statuses by IDs.
+     * Requires `features.notificationsDismissMultiple`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/differences_in_mastoapi_responses/#delete-apiv1notificationsdestroy_multiple}
+     */
+    dismissMultipleNotifications: async (notificationIds: string[]) => {
+      const response = await this.request('/api/v1/notifications/destroy_multiple', {
+        params: { ids: notificationIds },
+        method: 'DELETE',
+      });
+
+      return response.json as {};
+    },
   };
 
   public readonly pushNotifications = {
@@ -1738,6 +1968,17 @@ class PlApiClient {
       const response = await this.request('/api/v2/search', { params: { ...params, q } });
 
       return searchSchema.parse(response.json);
+    },
+
+    /**
+     * Searches for locations
+     * Requires `features.events`.
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#apiv1pleromasearchlocation}
+     */
+    searchLocation: async (q: string) => {
+      const response = await this.request('/api/v1/pleroma/search/location', { params: { q } });
+
+      return filteredArray(locationSchema).parse(response.json);
     },
   };
 
@@ -1942,7 +2183,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#v2}
        */
       getAccounts: async (params: AdminGetAccountsParams) =>
-        this.#paginatedGet('/api/v2/admin/accounts', { params }, accountSchema),
+        this.#paginatedGet<AdminAccount>('/api/v2/admin/accounts', { params }, adminAccountSchema),
 
       /**
        * View a specific account
@@ -1952,7 +2193,7 @@ class PlApiClient {
       getAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}`);
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -1963,7 +2204,7 @@ class PlApiClient {
       approveAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/approve`, { method: 'POST' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -1974,7 +2215,7 @@ class PlApiClient {
       rejectAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/reject`, { method: 'POST' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -1985,7 +2226,7 @@ class PlApiClient {
       deleteAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}`, { method: 'DELETE' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -2007,7 +2248,7 @@ class PlApiClient {
       enableAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/enable`, { method: 'POST' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -2018,7 +2259,7 @@ class PlApiClient {
       unsilenceAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsilence`, { method: 'POST' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -2029,7 +2270,7 @@ class PlApiClient {
       unsuspendAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsuspend`, { method: 'POST' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
 
       /**
@@ -2040,7 +2281,7 @@ class PlApiClient {
       unsensitiveAccount: async (accountId: string) => {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsensitive`, { method: 'POST' });
 
-        return accountSchema.parse(response.json);
+        return adminAccountSchema.parse(response.json);
       },
     },
 
@@ -2052,7 +2293,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#get}
        */
       getDomainBlocks: (params: AdminGetDomainBlocksParams) =>
-        this.#paginatedGet('/api/v1/admin/domain_blocks', { params }, adminDomainBlockSchema),
+        this.#paginatedGet<AdminDomainBlock>('/api/v1/admin/domain_blocks', { params }, adminDomainBlockSchema),
 
       /**
        * Get a single blocked domain
@@ -2115,7 +2356,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#get}
        */
       getReports: (params: AdminGetReportsParams) =>
-        this.#paginatedGet('/api/v1/admin/reports', { params }, adminReportSchema),
+        this.#paginatedGet<AdminReport>('/api/v1/admin/reports', { params }, adminReportSchema),
 
       /**
        * View a single report
@@ -2225,7 +2466,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#get}
        */
       getCanonicalEmailBlocks: async (params: AdminGetCanonicalEmailBlocks) =>
-        this.#paginatedGet('/api/v1/admin/canonical_email_blocks', { params }, adminCanonicalEmailBlockSchema),
+        this.#paginatedGet<AdminCanonicalEmailBlock>('/api/v1/admin/canonical_email_blocks', { params }, adminCanonicalEmailBlockSchema),
 
       /**
        * Show a single canonical email block
@@ -2276,7 +2517,7 @@ class PlApiClient {
        * Obtain information about popularity of certain accounts, servers, languages, etc.
        * @see {@link https://docs.joinmastodon.org/methods/admin/dimensions/#get}
        */
-      getDimensions: async (keys: AdminDimension[], params?: AdminGetDimensionsParams) => {
+      getDimensions: async (keys: AdminDimensionKey[], params?: AdminGetDimensionsParams) => {
         const response = await this.request('/api/v1/admin/dimensions', { params: { ...params, keys } });
 
         return filteredArray(adminDimensionSchema).parse(response.json);
@@ -2291,7 +2532,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/domain_allows/#get}
        */
       getDomainAllows: (params: AdminGetDomainAllowsParams) =>
-        this.#paginatedGet('/api/v1/admin/domain_allows', { params }, adminDomainAllowSchema),
+        this.#paginatedGet<AdminDomainAllow>('/api/v1/admin/domain_allows', { params }, adminDomainAllowSchema),
 
       /**
        * Get a single allowed domain
@@ -2335,7 +2576,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/email_domain_blocks/#get}
        */
       getEmailDomainBlocks: (params: AdminGetEmailDomainBlocksParams) =>
-        this.#paginatedGet('/api/v1/admin/email_domain_blocks', { params }, adminEmailDomainBlockSchema),
+        this.#paginatedGet<AdminEmailDomainBlock>('/api/v1/admin/email_domain_blocks', { params }, adminEmailDomainBlockSchema),
 
       /**
        * Get a single blocked email domain
@@ -2379,7 +2620,7 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/ip_blocks/#get}
        */
       getIpBlocks: (params?: AdminGetIpBlocksParams) =>
-        this.#paginatedGet('/api/v1/admin/ip_blocks', { params }, adminIpBlockSchema),
+        this.#paginatedGet<AdminIpBlock>('/api/v1/admin/ip_blocks', { params }, adminIpBlockSchema),
 
       /**
        * Get a single IP block
@@ -2475,6 +2716,196 @@ class PlApiClient {
         width: z.number().nullable().catch(null),
         height: z.number().nullable().catch(null),
       }).parse(response.json);
+    },
+  };
+
+  /** @see {@link https://docs.pleroma.social/backend/development/API/chats} */
+  public readonly chats = {
+    /**
+     * create or get an existing Chat for a certain recipient
+     * @see {@link https://docs.pleroma.social/backend/development/API/chats/#creating-or-getting-a-chat}
+     */
+    createChat: async (accountId: string) => {
+      const response = await this.request(`/api/v1/pleroma/chats/by-account-id/${accountId}`, { method: 'POST' });
+
+      return chatSchema.parse(response.json);
+    },
+
+    /**
+     * @see {@link https://docs.pleroma.social/backend/development/API/chats/#creating-or-getting-a-chat}
+     */
+    getChat: async (chatId: string) => {
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}`);
+
+      return chatSchema.parse(response.json);
+    },
+
+    /**
+     * Marking a chat as read
+     * mark a number of messages in a chat up to a certain message as read
+     * @see {@link https://docs.pleroma.social/backend/development/API/chats/#marking-a-chat-as-read}
+     */
+    markChatAsRead: async (chatId: string, last_read_id: string) => {
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}/read`, { method: 'POST', params: { last_read_id } });
+
+      return chatSchema.parse(response.json);
+    },
+
+    /**
+     * Marking a single chat message as read
+     * To set the `unread` property of a message to `false`
+     * https://docs.pleroma.social/backend/development/API/chats/#marking-a-single-chat-message-as-read
+     */
+    markChatMessageAsRead: async (chatId: string, chatMessageId: string) => {
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}/messages/${chatMessageId}/read`, { method: 'POST' });
+
+      return chatSchema.parse(response.json);
+    },
+
+    /**
+     * Getting a list of Chats
+     * This will return a list of chats that you have been involved in, sorted by their last update (so new chats will be at the top).
+     * @see {@link https://docs.pleroma.social/backend/development/API/chats/#getting-a-list-of-chats}
+     */
+    getChats: async (params?: GetChatsParams) =>
+      this.#paginatedGet<Chat>('/api/v2/pleroma/chats', { params }, chatSchema),
+
+    /**
+     * Getting the messages for a Chat¶
+     * For a given Chat id, you can get the associated messages with
+     */
+    getChatMessages: async (chatId: string, params?: GetChatMessagesParams) =>
+      this.#paginatedGet<ChatMessage>(`/api/v1/pleroma/chats/${chatId}/messages`, { params }, chatMessageSchema),
+
+    /**
+     * Posting a chat message¶
+     * Posting a chat message for given Chat id works like this:
+     * @see {@link https://docs.pleroma.social/backend/development/API/chats/#posting-a-chat-message}
+     */
+    createChatMessage: async (chatId: string, params: CreateChatMessageParams) => {
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}/messages`, { method: 'POST', body: params });
+
+      return chatMessageSchema.parse(response.json);
+    },
+
+    /**
+     * Deleting a chat message
+     * Deleting a chat message for given Chat id works like this:
+     * @see {@link https://docs.pleroma.social/backend/development/API/chats/#deleting-a-chat-message}
+     */
+    deleteChatMessage: async (chatId: string, messageId: string) => {
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}/messages/${messageId}`, { method: 'DELETE' });
+
+      return chatMessageSchema.parse(response.json);
+    },
+
+    /**
+     * Deleting a chat
+     * Requires `features.chatsDelete`.
+     */
+    deleteChat: async (chatId: string) => {
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}`, { method: 'DELETE' });
+
+      return chatSchema.parse(response.json);
+    },
+  };
+
+  public readonly events = {
+    /**
+     * Creates an event
+     * @see {@link }
+     */
+    createEvent: async (params: CreateEventParams) => {
+      const response = await this.request('/api/v1/pleroma/events', { method: 'POST', body: params });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Edits an event
+     * @see {@link }
+     */
+    editEvent: async (statusId: string, params: EditEventParams) => {
+      const response = await this.request(`/api/v1/pleroma/events/${statusId}`, { method: 'PUT', body: params });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Gets user's joined events
+     * @see {@link }
+     */
+    getJoinedEvents: async (state?: 'pending' | 'reject' | 'accept', params?: GetJoinedEventsParams) =>
+      this.#paginatedGet<Status>('/api/v1/pleroma/events/joined_events', { params: { ...params, state } }, statusSchema),
+
+    /**
+     * Gets event participants
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#apiv1pleromaeventsidparticipations}
+     */
+    getEventParticipations: async (statusId: string, params?: GetEventParticipationsParams) =>
+      this.#paginatedGet<Account>(`/api/v1/pleroma/events/${statusId}/participations`, { params }, accountSchema),
+
+    /**
+     * Gets event participation requests
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#apiv1pleromaeventsidparticipation_requests}
+     */
+    getEventParticipationRequests: async (statusId: string, params?: GetEventParticipationRequestsParams) =>
+      this.#paginatedGet<{
+        account:Account;
+        participation_message: string;
+      }>(`/api/v1/pleroma/events/${statusId}/participation_requests`, { params }, z.object({
+        account: accountSchema,
+        participation_message: z.string().catch(''),
+      })),
+
+    /**
+     * Accepts user to the event
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#apiv1pleromaeventsidparticipation_requestsparticipant_idauthorize}
+     */
+    acceptEventParticipationRequest: async (statusId: string, accountId: string) => {
+      const response = await this.request(`/api/v1/pleroma/events/${statusId}/participation_requests/${accountId}/authorize`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Rejects user from the event
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#rejects-user-from-the-event}
+     */
+    rejectEventParticipationRequest: async (statusId: string, accountId: string) => {
+      const response = await this.request(`/api/v1/pleroma/events/${statusId}/participation_requests/${accountId}/reject`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Joins the event
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#joins-the-event}
+     */
+    joinEvent: async (statusId: string, participation_message?: string) => {
+      const response = await this.request(`/api/v1/pleroma/events/${statusId}/join`, { method: 'POST', body: { participation_message } });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Leaves the event
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#leaves-the-event}
+     */
+    leaveEvent: async (statusId: string) => {
+      const response = await this.request(`/api/v1/pleroma/events/${statusId}/leave`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Event ICS file
+     * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#event-ics-file}
+     */
+    getEventIcs: async (statusId: string) => {
+      const response = await this.request(`/api/v1/pleroma/events/${statusId}/ics`, { contentType: '' });
+
+      return response.data;
     },
   };
 

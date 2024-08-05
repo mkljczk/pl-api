@@ -8,6 +8,7 @@ const applicationSchema = z.object({
   website: z.string().optional().catch(undefined),
   client_id: z.string().optional().catch(undefined),
   client_secret: z.string().optional().catch(undefined),
+  redirect_uri: z.string().optional().catch(undefined),
 });
 
 type ApplicationReaction = Resolve<z.infer<typeof applicationSchema>>;

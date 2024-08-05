@@ -1,4 +1,4 @@
-import { PaginationParams } from './common';
+import type { PaginationParams } from './common';
 
 interface GetNotificationParams extends PaginationParams {
   /** Array of String. Types to include in the result. */
@@ -7,6 +7,11 @@ interface GetNotificationParams extends PaginationParams {
   exclude_types?: string[];
   /** String. Return only notifications received from the specified account. */
   account_id?: string;
+  /**
+   * will exclude the notifications for activities with the given visibilities. The parameter accepts an array of visibility types (`public`, `unlisted`, `private`, `direct`).
+   * Requires `features.notificationsExcludeVisibilities`.
+   */
+  exclude_visibilities?: string[];
 }
 
 interface UpdateNotificationPolicyRequest {

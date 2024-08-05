@@ -97,17 +97,17 @@ const getFeatures = (instance?: Instance) => {
 
   return {
     /**
-     * Can view and manage ActivityPub aliases through the API.
-     * @see GET /api/pleroma/aliases
-     * @see PATCH /api/v1/accounts/update_credentials
-     */
-    accountAliases: v.software === PLEROMA,
-
-    /**
      * Ability to set description of profile avatar and header.
      * @see PATCH /api/v1/accounts/update_credentials
      */
     accountAvatarDescription: v.software === GOTOSOCIAL,
+
+    /**
+     * Pleroma backups.
+     * @see GET /api/v1/pleroma/backups
+     * @see POST /api/v1/pleroma/backups
+     */
+    accountBackups: v.software === PLEROMA,
 
     /**
      * The accounts API allows an acct instead of an ID.
@@ -183,7 +183,10 @@ const getFeatures = (instance?: Instance) => {
      * @see PATCH /api/v1/pleroma/admin/rules/:id
      * @see DELETE /api/v1/pleroma/admin/rules/:id
      */
-    adminRules: v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+    adminRules: any([
+      v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+      v.software === PLEROMA && gte(v.version, '2.7.0'),
+    ]),
 
     /**
      * Can display announcements set by admins.
@@ -207,19 +210,12 @@ const getFeatures = (instance?: Instance) => {
     announcementsReactions: v.software === MASTODON,
 
     /**
-     * Pleroma backups.
-     * @see GET /api/v1/pleroma/backups
-     * @see POST /api/v1/pleroma/backups
-     */
-    backups: v.software === PLEROMA,
-
-    /**
      * Set your birthday and view upcoming birthdays.
      * @see GET /api/v1/pleroma/birthdays
      * @see POST /api/v1/accounts
      * @see PATCH /api/v1/accounts/update_credentials
      */
-    birthdays: v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+    birthdays: v.software === PLEROMA,
 
     /** Whether people who blocked you are visible through the API. */
     blockersVisible: features.includes('blockers_visible'),
@@ -292,6 +288,42 @@ const getFeatures = (instance?: Instance) => {
       v.software === TAKAHE,
       v.software === GOTOSOCIAL,
     ]),
+
+    /**
+     * @see GET /api/v1/conversations
+     */
+    conversationsByRecipients: v.software === PLEROMA,
+
+    /**
+     * @see POST /api/v1/statuses
+     */
+    createStatusExpiration: v.software === PLEROMA,
+
+    /**
+     * Ability to address recipients of a status explicitly (with `to`).
+     * @see POST /api/v1/statuses
+     */
+    createStatusExplicitAddressing: v.software === PLEROMA,
+
+    /**
+     * @see POST /api/v1/statuses
+     */
+    createStatusReplyToConversation: v.software === PLEROMA,
+
+    /**
+     * @see POST /api/v1/statuses
+     */
+    createStatusListScope: v.software === PLEROMA,
+
+    /**
+     * @see POST /api/v1/statuses
+     */
+    createStatusLocalScope: v.software === PLEROMA,
+
+    /**
+     * @see POST /api/v1/statuses
+     */
+    createStatusPreview: v.software === PLEROMA,
 
     /**
      * Ability to add non-standard reactions to a status.
@@ -395,12 +427,6 @@ const getFeatures = (instance?: Instance) => {
      */
     events: features.includes('events'),
 
-    /**
-     * Ability to address recipients of a status explicitly (with `to`).
-     * @see POST /api/v1/statuses
-     */
-    explicitAddressing: v.software === PLEROMA,
-
     /** Whether to allow exporting follows/blocks/mutes to CSV by paginating the API. */
     exportData: true,
 
@@ -423,6 +449,7 @@ const getFeatures = (instance?: Instance) => {
     familiarFollowers: any([
       v.software === MASTODON,
       v.software === PLEROMA && gte(v.version, '2.6.0') && v.build === REBASED,
+      v.software === PLEROMA && gte(v.version, '2.7.0'),
       v.software === TAKAHE,
     ]),
 
@@ -554,6 +581,7 @@ const getFeatures = (instance?: Instance) => {
     instanceV2: any([
       v.software === MASTODON && gte(v.compatVersion, '4.0.0'),
       v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.6.0'),
+      v.software === PLEROMA && gte(v.version, '2.7.0'),
       v.software === GOTOSOCIAL,
     ]),
 
@@ -598,6 +626,13 @@ const getFeatures = (instance?: Instance) => {
       v.software === PLEROMA,
       v.software === TOKI,
     ]),
+
+    /**
+     * Can view and manage ActivityPub aliases through the API.
+     * @see GET /api/pleroma/aliases
+     * @see PATCH /api/v1/accounts/update_credentials
+     */
+    manageAccountAliases: v.software === PLEROMA,
 
     /**
      * Can perform moderation actions with account and reports.
@@ -667,6 +702,16 @@ const getFeatures = (instance?: Instance) => {
       v.software === PLEROMA && gte(v.version, '2.5.0'),
       v.software === GOTOSOCIAL,
     ]),
+
+    /**
+     * @see DELETE /api/v1/notifications/destroy_multiple
+     */
+    notificationsDismissMultiple: v.software === PLEROMA,
+
+    /**
+     * @see GET /api/v1/notifications
+     */
+    notificationsExcludeVisibilities: v.software === PLEROMA,
 
     /**
      * Allows specifying notification types to include, rather than to exclude.
@@ -777,7 +822,7 @@ const getFeatures = (instance?: Instance) => {
      */
     removeFromFollowers: any([
       v.software === MASTODON,
-      v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+      v.software === PLEROMA && gte(v.version, '2.5.0'),
     ]),
 
     /**

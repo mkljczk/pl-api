@@ -21,7 +21,7 @@ const translationSchema = z.object({
   content: z.string().catch(''),
   spoiler_text: z.string().catch(''),
   poll: translationPollSchema.optional().catch(undefined),
-  media_attachments: filteredArray(translationMediaAttachment).catch([]),
+  media_attachments: filteredArray(translationMediaAttachment),
   detected_source_language: z.string(),
   provider: z.string(),
 });

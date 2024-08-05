@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { announcementSchema } from './announcement';
 import { announcementReactionSchema } from './announcement-reaction';
+import { chatSchema } from './chat';
 import { conversationSchema } from './conversation';
 import { notificationSchema } from './notification';
 import { statusSchema } from './status';
@@ -44,8 +45,41 @@ const announcementReactionStreamingEventSchema = baseStreamingEventSchema.extend
   payload: z.preprocess((payload: any) => JSON.parse(payload), announcementReactionSchema),
 });
 
+const chatUpdateStreamingEventSchema = baseStreamingEventSchema.extend({
+  event: z.literal('chat_update'),
+  payload: z.preprocess((payload: any) => JSON.parse(payload), chatSchema),
+});
+
+const followRelationshipsUpdateStreamingEventSchema = baseStreamingEventSchema.extend({
+  event: z.literal('follow_relationships_update'),
+  payload: z.preprocess((payload: any) => JSON.parse(payload), z.object({
+    state: z.enum(['follow_pending', 'follow_accept', 'follow_reject']),
+    follower: z.object({
+      id: z.string(),
+      follower_count: z.number().nullable().catch(null),
+      following_count: z.number().nullable().catch(null),
+    }),
+    following: z.object({
+      id: z.string(),
+      follower_count: z.number().nullable().catch(null),
+      following_count: z.number().nullable().catch(null),
+    }),
+  })),
+});
+
+const respondStreamingEventSchema = baseStreamingEventSchema.extend({
+  event: z.literal('respond'),
+  payload: z.preprocess((payload: any) => JSON.parse(payload), z.object({
+    type: z.string(),
+    result: z.enum(['success', 'ignored', 'error']),
+  })),
+});
+
 /** @see {@link https://docs.joinmastodon.org/methods/streaming/#events} */
-const streamingEventSchema = z.discriminatedUnion('event', [
+const streamingEventSchema = z.preprocess((event: any) => ({
+  event: event.event?.replace(/^pleroma:/, ''),
+  ...event,
+}), z.discriminatedUnion('event', [
   statusStreamingEventSchema,
   stringStreamingEventSchema,
   notificationStreamingEventSchema,
@@ -53,7 +87,10 @@ const streamingEventSchema = z.discriminatedUnion('event', [
   conversationStreamingEventSchema,
   announcementStreamingEventSchema,
   announcementReactionStreamingEventSchema,
-]);
+  chatUpdateStreamingEventSchema,
+  followRelationshipsUpdateStreamingEventSchema,
+  respondStreamingEventSchema,
+]));
 
 type StreamingEvent = z.infer<typeof streamingEventSchema>;
 

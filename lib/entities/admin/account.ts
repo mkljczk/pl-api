@@ -14,7 +14,7 @@ const adminAccountSchema = z.object({
   created_at: dateSchema,
   email: z.string().nullable().catch(null),
   ip: z.string().ip().nullable().catch(null),
-  ips: filteredArray(adminIpSchema).catch([]),
+  ips: filteredArray(adminIpSchema),
   locale: z.string().nullable().catch(null),
   invite_request: z.string().nullable().catch(null),
   role: roleSchema.nullable().catch(null),
