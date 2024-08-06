@@ -57,10 +57,10 @@ const chatMentionNotificationSchema = baseNotificationSchema.extend({
 
 /** @see {@link https://docs.joinmastodon.org/entities/Notification/} */
 const notificationSchema = z.preprocess((notification: any) => ({
+  ...notification,
   type: notification.type === 'pleroma:report'
     ? 'admin.report'
     : notification.type?.replace(/^pleroma:/, ''),
-  ...notification,
 }), z.discriminatedUnion('type', [
   accountNotificationSchema,
   statusNotificationSchema,
