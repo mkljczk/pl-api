@@ -37,7 +37,7 @@ const preprocessAccount = (account: any) => ({
 
     'location',
   ])),
-  ...account(pick(account.other_settings || {}), ['birthday', 'location']),
+  ...(pick(account.other_settings || {}), ['birthday', 'location']),
   source: account.source
     ? { ...(pick(account.pleroma?.source || {}, [
       'show_role', 'no_rich_text', 'discoverable', 'actor_type', 'show_birthday',
@@ -96,6 +96,10 @@ const baseAccountSchema = z.object({
   birthday: z.string().date().optional().catch(undefined),
 
   location: z.string().optional().catch(undefined),
+
+  avatar_description: z.string().catch(''),
+  enable_rss: z.boolean().catch(false),
+  header_description: z.string().catch(''),
 });
 
 const accountWithMovedAccountSchema = baseAccountSchema.extend({

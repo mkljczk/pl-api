@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { accountSchema } from './account';
 import { accountWarningSchema } from './account-warning';
 import { chatMessageSchema } from './chat-message';
-import { emojiReactionSchema } from './emoji-reaction';
 import { relationshipSeveranceEventSchema } from './relationship-severance-event';
 import { reportSchema } from './report';
 import { statusSchema } from './status';
@@ -47,7 +46,7 @@ const moveNotificationSchema = baseNotificationSchema.extend({
 
 const emojiReactionNotificationSchema = baseNotificationSchema.extend({
   type: z.literal('emoji_reaction'),
-  emoji: emojiReactionSchema,
+  emoji: z.string(),
   status: statusSchema,
 });
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { emojiSchema, filteredArray } from './utils';
 import { accountSchema } from './account';
+import { emojiSchema, filteredArray } from './utils';
 
 const baseEmojiReactionSchema = z.object({
   count: z.number().nullable().catch(null),

@@ -49,7 +49,7 @@ interface ReportAccountParams {
   comment?: string;
   forward?: boolean;
   category?: 'spam' | 'legal' | 'violation' | 'other';
-  rule_ids?: number[];
+  rule_ids?: string[];
 }
 
 type GetAccountEndorsementsParams = WithRelationshipsParam;

@@ -122,6 +122,11 @@ const getFeatures = (instance?: Instance) => {
     accountCreation: true,
 
     /**
+     * @see PATCH /api/v1/accounts/update_credentials
+     */
+    accountEnableRss: v.software === GOTOSOCIAL,
+
+    /**
      * Ability to pin other accounts on one's profile.
      * @see POST /api/v1/accounts/:id/pin
      * @see POST /api/v1/accounts/:id/unpin
@@ -616,7 +621,6 @@ const getFeatures = (instance?: Instance) => {
      */
     localOnlyStatuses: federation && any([
       v.software === GOTOSOCIAL,
-      v.software === PLEROMA,
     ]),
 
     /**
@@ -685,12 +689,6 @@ const getFeatures = (instance?: Instance) => {
       v.software === TAKAHE,
       v.software === GOTOSOCIAL,
     ]),
-
-    /**
-     * Ability to post statuses only to accounts with mutual relationship.
-     * @see POST /api/v1/statuses
-     */
-    mutualsOnlyStatuses: v.software === GOTOSOCIAL,
 
     /**
      * Add private notes to accounts.
@@ -961,6 +959,20 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v1/lists/:id/accounts
      */
     unrestrictedLists: v.software === PLEROMA,
+
+    /**
+     * Ability to post statuses only to accounts with mutual relationship.
+     * @see POST /api/v1/statuses
+     */
+    visibilityMutualsOnly: v.software === GOTOSOCIAL,
+
+    /**
+     * Ability to post statuses that don't federate.
+     * @see POST /api/v1/statuses
+     */
+    visibilityLocalOnly: federation && any([
+      v.software === PLEROMA,
+    ]),
   };
 };
 

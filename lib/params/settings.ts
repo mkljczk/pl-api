@@ -92,6 +92,22 @@ interface UpdateCredentialsParams {
   accepts_chat_messages?: boolean;
   /** user's preferred language for receiving emails (digest, confirmation, etc.) */
   language?: string;
+
+  /**
+   * Description of avatar image, for alt-text.
+   * Requires `features.accountAvatarDescription`.
+   */
+  avatar_description?: boolean;
+  /**
+   * Description of header image, for alt-text.
+   * Requires `features.accountAvatarDescription`.
+   */
+  header_description?: boolean;
+  /**
+   * Enable RSS feed for this account's Public posts at `/[username]/feed.rss`
+   * Requires `features.accountEnableRss`.
+  */
+  enable_rss?: boolean;
 }
 
 export type {

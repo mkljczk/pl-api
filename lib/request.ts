@@ -40,6 +40,8 @@ interface RequestBody {
   idempotencyKey?: string;
 }
 
+type RequestMeta = Pick<RequestBody, 'idempotencyKey' | 'onUploadProgress' | 'signal'>;
+
 function request<T = any>(this: PlApiClient, input: URL | RequestInfo, {
   method = 'GET',
   body,
@@ -126,6 +128,7 @@ function request<T = any>(this: PlApiClient, input: URL | RequestInfo, {
 export {
   type Response,
   type RequestBody,
+  type RequestMeta,
   getLinks,
   getNextLink,
   getPrevLink,

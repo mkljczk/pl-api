@@ -61,7 +61,7 @@ import {
 } from './entities';
 import { filteredArray } from './entities/utils';
 import { type Features, getFeatures } from './features';
-import request, { getNextLink, getPrevLink, type RequestBody } from './request';
+import request, { getNextLink, getPrevLink, type RequestBody, RequestMeta } from './request';
 import { buildFullPath } from './utils/url';
 
 import type {
@@ -153,6 +153,7 @@ import type {
   GetTrendingLinks,
   GetTrendingStatuses,
   GetTrendingTags,
+  GroupTimelineParams,
   HashtagTimelineParams,
   HomeTimelineParams,
   ListTimelineParams,
@@ -705,7 +706,7 @@ class PlApiClient {
     /**
      * Creates a bookmark folder
      * Requires `features.bookmarkFolders`.
-     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#post-apiv1pleromabookmark_folders} 
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#post-apiv1pleromabookmark_folders}
      */
     createBookmarkFolder: async (params: CreateBookmarkFolderParams) => {
       const response = await this.request('/api/v1/pleroma/bookmark_folders', { method: 'POST', body: params });
@@ -727,7 +728,7 @@ class PlApiClient {
     /**
      * Deletes a bookmark folder
      * Requires `features.bookmarkFolders`.
-     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apiv1pleromabookmark_foldersid} 
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apiv1pleromabookmark_foldersid}
      */
     deleteBookmarkFolder: async (bookmarkFolderId: string) => {
       const response = await this.request(`/api/v1/pleroma/bookmark_folders/${bookmarkFolderId}`, { method: 'DELETE' });
@@ -1230,7 +1231,7 @@ class PlApiClient {
     deleteStatus: async (statusId: string) => {
       const response = await this.request(`/api/v1/statuses/${statusId}`, { method: 'DELETE' });
 
-      return statusSchema.parse(response.json);
+      return statusSourceSchema.parse(response.json);
     },
 
     /**
@@ -1463,10 +1464,10 @@ class PlApiClient {
      * Creates a media attachment to be used with a new status. The full sized media will be processed asynchronously in the background for large uploads.
      * @see {@link https://docs.joinmastodon.org/methods/media/#v2}
      */
-    uploadMedia: async (params: UploadMediaParams, onUploadProgress?: (e: ProgressEvent) => void) => {
+    uploadMedia: async (params: UploadMediaParams, meta?: RequestMeta) => {
       const response = await this.request(
         this.features.mediaV2 ? '/api/v2/media' : '/api/v1/media',
-        { method: 'POST', body: params, contentType: '', onUploadProgress },
+        { ...meta, method: 'POST', body: params, contentType: '' },
       );
 
       return mediaAttachmentSchema.parse(response.json);
@@ -1654,6 +1655,9 @@ class PlApiClient {
 
       return markersSchema.parse(response.json);
     },
+
+    groupTimeline: async (groupId: string, params?: GroupTimelineParams) =>
+      this.#paginatedGet<Status>(`/api/v1/timelines/group/${groupId}`, { params }, statusSchema),
   };
 
   public readonly lists = {
@@ -1799,8 +1803,23 @@ class PlApiClient {
      * Notifications concerning the user. This API returns Link headers containing links to the next/previous page. However, the links can also be constructed dynamically using query params and `id` values.
      * @see {@link https://docs.joinmastodon.org/methods/notifications/#get}
      */
-    getNotifications: async (params?: GetNotificationParams) =>
-      this.#paginatedGet<Notification>('/api/v1/notifications', { params }, notificationSchema),
+    getNotifications: async (params?: GetNotificationParams, meta?: RequestMeta) => {
+      const PLEROMA_TYPES = [
+        'chat_mention', 'emoji_reaction', 'report', 'participation_accepted', 'participation_request', 'event_reminder', 'event_update',
+      ];
+
+      if (params?.types) params.types = [
+        ...params.types,
+        ...params.types.filter(type => PLEROMA_TYPES.includes(type)).map(type => `pleroma:${type}`),
+      ];
+
+      if (params?.exclude_types) params.exclude_types = [
+        ...params.exclude_types,
+        ...params.exclude_types.filter(type => PLEROMA_TYPES.includes(type)).map(type => `pleroma:${type}`),
+      ];
+
+      return this.#paginatedGet<Notification>('/api/v1/notifications', { ...meta, params }, notificationSchema);
+    },
 
     /**
      * Get a single notification
@@ -1964,8 +1983,8 @@ class PlApiClient {
      * Perform a search
      * @see {@link https://docs.joinmastodon.org/methods/search/#v2}
      */
-    search: async (q: string, params?: SearchParams) => {
-      const response = await this.request('/api/v2/search', { params: { ...params, q } });
+    search: async (q: string, params?: SearchParams, meta?: RequestMeta) => {
+      const response = await this.request('/api/v2/search', { ...meta, params: { ...params, q } });
 
       return searchSchema.parse(response.json);
     },
@@ -1975,8 +1994,8 @@ class PlApiClient {
      * Requires `features.events`.
      * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#apiv1pleromasearchlocation}
      */
-    searchLocation: async (q: string) => {
-      const response = await this.request('/api/v1/pleroma/search/location', { params: { q } });
+    searchLocation: async (q: string, meta?: RequestMeta) => {
+      const response = await this.request('/api/v1/pleroma/search/location', { ...meta, params: { q } });
 
       return filteredArray(locationSchema).parse(response.json);
     },
@@ -3080,7 +3099,7 @@ class PlApiClient {
 
       getGroupRelationships: async (groupIds: string[]) => {
         const response = await this.request('/api/v1/groups/relationships', { params: { id: groupIds } });
-  
+
         return filteredArray(groupRelationshipSchema).parse(response.json);
       },
     },

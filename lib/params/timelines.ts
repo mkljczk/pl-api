@@ -53,6 +53,8 @@ interface SaveMarkersParams {
   };
 }
 
+type GroupTimelineParams = PaginationParams & WithMutedParam;
+
 export type {
   PublicTimelineParams,
   HashtagTimelineParams,
@@ -61,4 +63,5 @@ export type {
   ListTimelineParams,
   GetConversationsParams,
   SaveMarkersParams,
+  GroupTimelineParams,
 };
