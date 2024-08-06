@@ -770,10 +770,15 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#update_credentials}
      */
     updateCredentials: async (params: UpdateCredentialsParams) => {
-      if (params.background_image) (params as any).pleroma_background_image = params.background_image;
-      if (params.settings_store) (params as any).pleroma_settings_store = params.settings_store;
-      delete (params as any).pleroma_background_image;
-      delete (params as any).pleroma_settings_store;
+      if (params.background_image) {
+        (params as any).pleroma_background_image = params.background_image;
+        delete params.background_image;
+      }
+
+      if (params.settings_store) {
+        (params as any).pleroma_settings_store = params.settings_store;
+        delete params.settings_store;
+      }
 
       const response = await this.request('/api/v1/accounts/update_credentials', {
         method: 'PATCH',
