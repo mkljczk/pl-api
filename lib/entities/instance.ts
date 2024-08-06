@@ -84,7 +84,18 @@ const pleromaSchema = coerceObject({
     federation: coerceObject({
       enabled: z.boolean().catch(true), // Assume true unless explicitly false
       mrf_policies: z.string().array().optional().catch(undefined),
-      // mrf_simple: mrfSimpleSchema,
+      mrf_simple: coerceObject({
+        accept: z.string().array().catch([]),
+        avatar_removal: z.string().array().catch([]),
+        banner_removal: z.string().array().catch([]),
+        federated_timeline_removal: z.string().array().catch([]),
+        followers_only: z.string().array().catch([]),
+        media_nsfw: z.string().array().catch([]),
+        media_removal: z.string().array().catch([]),
+        reject: z.string().array().catch([]),
+        reject_deletes: z.string().array().catch([]),
+        report_removal: z.string().array().catch([]),
+      }),
     }),
     fields_limits: coerceObject({
       max_fields: z.number().nonnegative().catch(4),

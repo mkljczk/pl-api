@@ -10,8 +10,8 @@ interface CreateGroupParams {
 interface UpdateGroupParams {
   display_name?: string;
   note?: string;
-  avatar?: File;
-  header?: File;
+  avatar?: File | '';
+  header?: File | '';
 }
 
 type GetGroupMembershipsParams = Exclude<PaginationParams, 'min_id'>;

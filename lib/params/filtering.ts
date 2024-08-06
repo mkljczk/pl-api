@@ -11,9 +11,11 @@ type GetMutesParams = Exclude<PaginationParams, 'min_id'> & WithRelationshipsPar
 type GetBlocksParams = PaginationParams & WithRelationshipsParam;
 type GetDomainBlocksParams = PaginationParams;
 
+type FilterContext = 'home' | 'notifications' | 'public' | 'thread' | 'account';
+
 interface CreateFilterParams {
   title: string;
-  context: Array<'notifications' | 'public' | 'thread' | 'account'>;
+  context: Array<FilterContext>;
   filter_action?: 'warn' | 'hide';
   expires_in?: number;
   keywords_attributes: Array<{
@@ -24,7 +26,7 @@ interface CreateFilterParams {
 
 interface UpdateFilterParams {
   title?: string;
-  context?: Array<'notifications' | 'public' | 'thread' | 'account'>;
+  context?: Array<FilterContext>;
   filter_action?: 'warn' | 'hide';
   expires_in?: number;
   keywords_attributes?: Array<{
@@ -40,6 +42,7 @@ export type {
   GetMutesParams,
   GetBlocksParams,
   GetDomainBlocksParams,
+  FilterContext,
   CreateFilterParams,
   UpdateFilterParams,
 };

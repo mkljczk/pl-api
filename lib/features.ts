@@ -1040,5 +1040,4 @@ export {
   UNRELEASED,
   type Features,
   getFeatures,
-  parseVersion,
 };

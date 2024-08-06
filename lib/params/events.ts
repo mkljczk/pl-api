@@ -15,6 +15,8 @@ interface CreateEventParams {
   join_mode?: 'free' | 'restricted';
   /** optional, location ID from the location provider used by server */
   location_id?: string;
+  /** string, contain the MIME type of the status. */
+  content_type?: string;
 }
 
 type EditEventParams = Partial<Omit<CreateEventParams, 'join_mode'>>;

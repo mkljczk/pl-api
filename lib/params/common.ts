@@ -25,6 +25,11 @@ interface WithRelationshipsParam {
   with_relationships?: boolean;
 }
 
+interface OnlyMediaParam {
+  /** Boolean. Show only statuses with media attached? Defaults to false. */
+  only_media?: boolean;
+}
+
 interface OnlyEventsParam {
   /**
    * Bolean. Filter out statuses without events.
@@ -37,5 +42,6 @@ export type {
   PaginationParams,
   WithMutedParam,
   WithRelationshipsParam,
+  OnlyMediaParam,
   OnlyEventsParam,
 };

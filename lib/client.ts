@@ -461,8 +461,8 @@ class PlApiClient {
      * Search for matching accounts by username or display name.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#search}
      */
-    searchAccounts: async (q: string, params?: SearchAccountParams) => {
-      const response = await this.request('/api/v1/accounts/search', { params: { ...params, q } });
+    searchAccounts: async (q: string, params?: SearchAccountParams, meta?: RequestMeta) => {
+      const response = await this.request('/api/v1/accounts/search', { ...meta, params: { ...params, q } });
 
       return filteredArray(accountSchema).parse(response.json);
     },

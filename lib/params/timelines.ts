@@ -1,15 +1,13 @@
-import type { OnlyEventsParam, PaginationParams, WithMutedParam } from './common';
+import type { OnlyEventsParam, OnlyMediaParam, PaginationParams, WithMutedParam } from './common';
 
-interface PublicTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam {
+interface PublicTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam {
   /** Boolean. Show only local statuses? Defaults to false. */
   local?: boolean;
   /** Boolean. Show only remote statuses? Defaults to false. */
   remote?: boolean;
-  /** Boolean. Show only statuses with media attached? Defaults to false. */
-  only_media?: boolean;
 }
 
-interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam {
+interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam {
   /** Array of String. Return statuses that contain any of these additional tags. */
   any?: string[];
   /** Array of String. Return statuses that contain all of these additional tags. */
@@ -20,14 +18,6 @@ interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEv
   local?: boolean;
   /** Boolean. Show only remote statuses? Defaults to false. */
   remote?: boolean;
-  /** Boolean. Show only statuses with media attached? Defaults to false. */
-  only_media?: boolean;
-
-  /**
-   * Bolean. Filter out statuses without events.
-   * Requires `features.events`.
-   */
-  only_events?: boolean;
 }
 
 type HomeTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam;
@@ -53,7 +43,7 @@ interface SaveMarkersParams {
   };
 }
 
-type GroupTimelineParams = PaginationParams & WithMutedParam;
+type GroupTimelineParams = PaginationParams & WithMutedParam & OnlyMediaParam;
 
 export type {
   PublicTimelineParams,
