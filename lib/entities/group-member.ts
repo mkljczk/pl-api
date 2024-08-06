@@ -8,6 +8,8 @@ enum GroupRoles {
   USER = 'user'
 }
 
+type GroupRole =`${GroupRoles}`;
+
 const groupMemberSchema = z.object({
   id: z.string(),
   account: accountSchema,
@@ -16,4 +18,4 @@ const groupMemberSchema = z.object({
 
 type GroupMember = z.infer<typeof groupMemberSchema>;
 
-export { groupMemberSchema, type GroupMember, GroupRoles };
+export { groupMemberSchema, type GroupMember, GroupRoles, type GroupRole };

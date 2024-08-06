@@ -76,6 +76,7 @@ import type {
   Chat,
   ChatMessage,
   Conversation,
+  GroupRole,
   Instance,
   Notification,
   ScheduledStatus,
@@ -152,7 +153,6 @@ import type {
   GetTrendingLinks,
   GetTrendingStatuses,
   GetTrendingTags,
-  GroupMemberRole,
   HashtagTimelineParams,
   HomeTimelineParams,
   ListTimelineParams,
@@ -496,7 +496,7 @@ class PlApiClient {
      * Requires `features.accountEndorsements`.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromaaccountsidendorsements}
      */
-    getAccountEndorsements: async (accountId: string, params: GetAccountEndorsementsParams) => {
+    getAccountEndorsements: async (accountId: string, params?: GetAccountEndorsementsParams) => {
       const response = await this.request(`/api/v1/pleroma/accounts/${accountId}/endorsements`, { params });
 
       return filteredArray(accountSchema).parse(response.json);
@@ -2997,7 +2997,7 @@ class PlApiClient {
       },
 
       /** Has an optional role attribute that can be used to filter by role (valid roles are `"admin"`, `"moderator"`, `"user"`). */
-      getGroupMemberships: async (groupId: string, role?: GroupMemberRole, params?: GetGroupMembershipsParams) =>
+      getGroupMemberships: async (groupId: string, role?: GroupRole, params?: GetGroupMembershipsParams) =>
         this.#paginatedGet<Account>(`/api/v1/groups/${groupId}/memberships`, { params: { ...params, role } }, groupMemberSchema),
 
       /** returns an array of `Account` entities representing pending requests to join a group */
@@ -3065,17 +3065,23 @@ class PlApiClient {
       },
 
       /** promote one or more accounts to role `new_role`. An error is returned if any of those accounts has a higher role than `new_role` already, or if the role is higher than the issuing user's. Valid roles are `admin`, and `moderator` and `user`. */
-      promoteGroupUsers: async (groupId: string, accountIds: string[], role: GroupMemberRole) => {
+      promoteGroupUsers: async (groupId: string, accountIds: string[], role: GroupRole) => {
         const response = await this.request(`/api/v1/groups/${groupId}/promote`, { method: 'POST', params: { account_ids: accountIds, role } });
 
         return filteredArray(groupMemberSchema).parse(response.json);
       },
 
       /** demote one or more accounts to role `new_role`. Returns an error unless every of the target account has a strictly lower role than the user (you cannot demote someone with the same role as you), or if any target account already has a role lower than `new_role`. Valid roles are `admin`, `moderator` and `user`. */
-      demoteGroupUsers: async (groupId: string, accountIds: string[], role: GroupMemberRole) => {
+      demoteGroupUsers: async (groupId: string, accountIds: string[], role: GroupRole) => {
         const response = await this.request(`/api/v1/groups/${groupId}/demote`, { method: 'POST', params: { account_ids: accountIds, role } });
 
         return filteredArray(groupMemberSchema).parse(response.json);
+      },
+
+      getGroupRelationships: async (groupIds: string[]) => {
+        const response = await this.request('/api/v1/groups/relationships', { params: { id: groupIds } });
+  
+        return filteredArray(groupRelationshipSchema).parse(response.json);
       },
     },
   };

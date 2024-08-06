@@ -34,7 +34,10 @@ const preprocessAccount = (account: any) => ({
     'unread_conversation_count',
     'unread_notifications_count',
     'notification_settings',
+
+    'location',
   ])),
+  ...account(pick(account.other_settings || {}), ['birthday', 'location']),
   source: account.source
     ? { ...(pick(account.pleroma?.source || {}, [
       'show_role', 'no_rich_text', 'discoverable', 'actor_type', 'show_birthday',
@@ -91,6 +94,8 @@ const baseAccountSchema = z.object({
   accepts_chat_messages: z.boolean().nullable().catch(null),
   favicon: z.string().optional().catch(undefined),
   birthday: z.string().date().optional().catch(undefined),
+
+  location: z.string().optional().catch(undefined),
 });
 
 const accountWithMovedAccountSchema = baseAccountSchema.extend({

@@ -7,7 +7,6 @@ const groupRelationshipSchema = z.object({
   member: z.boolean().catch(false),
   role: z.nativeEnum(GroupRoles).catch(GroupRoles.USER),
   requested: z.boolean().catch(false),
-  owner: z.boolean().catch(false),
 });
 
 type GroupRelationship = z.infer<typeof groupRelationshipSchema>;

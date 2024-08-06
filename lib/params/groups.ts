@@ -18,13 +18,10 @@ type GetGroupMembershipsParams = Exclude<PaginationParams, 'min_id'>;
 type GetGroupMembershipRequestsParams = Exclude<PaginationParams, 'min_id'>;
 type GetGroupBlocksParams = Exclude<PaginationParams, 'min_id'>;
 
-type GroupMemberRole = 'admin' | 'moderator' | 'user';
-
 export type {
   CreateGroupParams,
   UpdateGroupParams,
   GetGroupMembershipsParams,
   GetGroupMembershipRequestsParams,
   GetGroupBlocksParams,
-  GroupMemberRole,
 };
