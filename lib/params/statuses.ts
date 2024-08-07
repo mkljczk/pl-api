@@ -3,6 +3,8 @@ import type { PaginationParams } from './common';
 interface CreateStatusWithContent {
   /** The text content of the status. If `media_ids` is provided, this becomes optional. Attaching a `poll` is optional while `status` is provided. */
   status: string;
+  /** Array of String. Include Attachment IDs to be attached as media. If provided, `status` becomes optional, and `poll` cannot be used. */
+  media_ids?: string[];
 }
 
 interface CreateStatusWithMedia {
@@ -12,10 +14,8 @@ interface CreateStatusWithMedia {
   media_ids: string[];
 }
 
-interface CreateStatusWithPoll {
-  /** The text content of the status. If media_ids is provided, this becomes optional. Attaching a poll is optional while status is provided. */
-  status?: string;
-  poll: {
+interface CreateStatusOptionalParams {
+  poll?: {
     /** Array of String. Possible answers to the poll. If provided, `media_ids` cannot be used, and poll[expires_in] must be provided. */
     options: string[];
     /** Integer. Duration that the poll should be open, in seconds. If provided, media_ids cannot be used, and poll[options] must be provided. */
@@ -24,10 +24,9 @@ interface CreateStatusWithPoll {
     multiple?:  boolean;
     /** Boolean. Hide vote counts until the poll ends? Defaults to false. */
     hide_totals?: boolean;
-  };
-}
 
-interface CreateStatusOptionalParams {
+    options_map?: Array<Record<string, string>>;
+  };
   /** String. ID of the status being replied to, if status is a reply. */
   in_reply_to_id?: string;
   /** Boolean. Mark status and attached media as sensitive? Defaults to false. */
@@ -69,15 +68,24 @@ interface CreateStatusOptionalParams {
    * Requires `features.createStatusReplyToConversation`.
    */
   in_reply_to_conversation_id?: string;
-
   /**
    * ID of the status being quoted, if any.
    * Requires `features.quotePosts`.
    */
   quote_id?: string;
+
+  /**
+   * Requires `features.localOnlyStatuses`.
+   */
+  federated?: boolean;
+
+  group_id?: string;
+
+  status_map?: Record<string, string>;
+  spoiler_text_map?: Record<string, string>;
 }
 
-type CreateStatusParams = (CreateStatusWithContent | CreateStatusWithMedia | CreateStatusWithPoll) & CreateStatusOptionalParams;
+type CreateStatusParams = (CreateStatusWithContent | CreateStatusWithMedia) & CreateStatusOptionalParams;
 
 interface LanguageParam {
   /** Attach translated version of a post. Requires `features.autoTranslate`. */
@@ -100,7 +108,7 @@ interface EditStatusOptionalParams {
   language?: string;
 }
 
-type EditStatusParams = (CreateStatusWithContent | CreateStatusWithMedia | CreateStatusWithPoll) & EditStatusOptionalParams;
+type EditStatusParams = (CreateStatusWithContent | CreateStatusWithMedia) & EditStatusOptionalParams;
 type GetStatusQuotesParams = PaginationParams;
 
 export type {

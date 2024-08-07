@@ -6,7 +6,7 @@ interface CreateAccountParams {
   /** String. The password to be used for login */
   password: string;
   /** Whether the user agrees to the local rules, terms, and policies. These should be presented to the user in order to allow them to consent before setting this parameter to TRUE. */
-  aggrement: string;
+  agreement: boolean;
   /** String. The language of the confirmation email that will be sent. */
   locale: string;
   /** String. If registrations require manual approval, this text will be reviewed by moderators. */
@@ -22,6 +22,12 @@ interface CreateAccountParams {
   captcha_answer_data?: string;
   /** invite token required when the registrations aren't public. */
   token?: string;
+  birthday?: string;
+
+  /** optional, domain id, if multitenancy is enabled. */
+  domain?: string;
+
+  accepts_email_list?: boolean;
 }
 
 interface UpdateCredentialsParams {

@@ -10,7 +10,10 @@ const filterBadges = (tags?: string[]) =>
   tags?.filter(tag => tag.startsWith('badge:')).map(tag => roleSchema.parse({ id: tag, name: tag.replace(/^badge:/, '') }));
 
 const preprocessAccount = (account: any) => ({
+  verified: account.verified || account.pleroma?.tags?.includes('verified'),
   roles: account.roles?.length ? account.roles : filterBadges(account.pleroma?.tags),
+  avatar_static: account.avatar_static || account.avatar,
+  header_static: account.header_static || account.header,
   ...(pick(account.pleroma || {}, [
     'ap_id',
     'background_image',
@@ -60,9 +63,9 @@ const baseAccountSchema = z.object({
   display_name: z.string().catch(''),
   note: z.string().catch(''),
   avatar: z.string().catch(''),
-  avatar_static: z.string().url().optional().catch(undefined),
+  avatar_static: z.string().url().catch(''),
   header: z.string().url().catch(''),
-  header_static: z.string().url().optional().catch(undefined),
+  header_static: z.string().url().catch(''),
   locked: z.boolean().catch(false),
   fields: filteredArray(fieldSchema),
   emojis: filteredArray(customEmojiSchema),
@@ -100,6 +103,8 @@ const baseAccountSchema = z.object({
   avatar_description: z.string().catch(''),
   enable_rss: z.boolean().catch(false),
   header_description: z.string().catch(''),
+
+  verified: z.boolean().optional().catch(undefined),
 });
 
 const accountWithMovedAccountSchema = baseAccountSchema.extend({
