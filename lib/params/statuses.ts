@@ -21,7 +21,7 @@ interface CreateStatusOptionalParams {
     /** Integer. Duration that the poll should be open, in seconds. If provided, media_ids cannot be used, and poll[options] must be provided. */
     expires_in: number;
     /** Boolean. Allow multiple choices? Defaults to false. */
-    multiple?:  boolean;
+    multiple?: boolean;
     /** Boolean. Hide vote counts until the poll ends? Defaults to false. */
     hide_totals?: boolean;
 

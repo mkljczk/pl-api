@@ -373,7 +373,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#follow}
      */
     followAccount: async (accountId: string, params?: FollowAccountParams) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}/follow`, { method: 'POST', params });
+      const response = await this.request(`/api/v1/accounts/${accountId}/follow`, { method: 'POST', body: params });
 
       return relationshipSchema.parse(response.json);
     },
@@ -908,7 +908,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#mute}
      */
     muteAccount: async (accountId: string, params?: MuteAccountParams) => {
-      const response = await this.request(`/api/v1/accounts/${accountId}/mute`, { method: 'POST', params });
+      const response = await this.request(`/api/v1/accounts/${accountId}/mute`, { method: 'POST', body: params });
 
       return relationshipSchema.parse(response.json);
     },
@@ -2770,7 +2770,7 @@ class PlApiClient {
      * @see {@link https://docs.pleroma.social/backend/development/API/chats/#marking-a-chat-as-read}
      */
     markChatAsRead: async (chatId: string, last_read_id: string) => {
-      const response = await this.request(`/api/v1/pleroma/chats/${chatId}/read`, { method: 'POST', params: { last_read_id } });
+      const response = await this.request(`/api/v1/pleroma/chats/${chatId}/read`, { method: 'POST', body: { last_read_id } });
 
       return chatSchema.parse(response.json);
     },

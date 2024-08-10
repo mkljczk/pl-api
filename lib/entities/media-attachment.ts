@@ -17,7 +17,7 @@ const blurhashSchema = z.string().superRefine((value, ctx) => {
 const baseAttachmentSchema = z.object({
   id: z.string(),
   type: z.string(),
-  url: z.string().url().nullable().catch(null),
+  url: z.string().url().catch(''),
   preview_url: z.string().url().nullable().catch(null),
   remote_url: z.string().url().nullable().catch(null),
   description: z.string().catch(''),

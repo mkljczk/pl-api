@@ -20,7 +20,7 @@ const accountNotificationSchema = baseNotificationSchema.extend({
 });
 
 const statusNotificationSchema = baseNotificationSchema.extend({
-  type: z.enum(['mention', 'status', 'reblog', 'favourite', 'poll', 'update']),
+  type: z.enum(['mention', 'status', 'reblog', 'favourite', 'poll', 'update', 'event_reminder']),
   status: statusSchema,
 });
 
@@ -47,12 +47,19 @@ const moveNotificationSchema = baseNotificationSchema.extend({
 const emojiReactionNotificationSchema = baseNotificationSchema.extend({
   type: z.literal('emoji_reaction'),
   emoji: z.string(),
+  emoji_url: z.string().nullable().catch(null),
   status: statusSchema,
 });
 
 const chatMentionNotificationSchema = baseNotificationSchema.extend({
   type: z.literal('chat_mention'),
   chat_message: chatMessageSchema,
+});
+
+const eventParticipationRequestNotificationSchema = baseNotificationSchema.extend({
+  type: z.enum(['participation_accepted', 'participation_request']),
+  status: statusSchema,
+  participation_message: z.string().nullable().catch(null),
 });
 
 /** @see {@link https://docs.joinmastodon.org/entities/Notification/} */
@@ -70,6 +77,7 @@ const notificationSchema = z.preprocess((notification: any) => ({
   moveNotificationSchema,
   emojiReactionNotificationSchema,
   chatMentionNotificationSchema,
+  eventParticipationRequestNotificationSchema,
 ]));
 
 type Notification = z.infer<typeof notificationSchema>;
