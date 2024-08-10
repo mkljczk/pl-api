@@ -7,7 +7,7 @@ interface MuteAccountParams {
   duration?: number;
 }
 
-type GetMutesParams = Exclude<PaginationParams, 'min_id'> & WithRelationshipsParam;
+type GetMutesParams = Omit<PaginationParams, 'min_id'> & WithRelationshipsParam;
 type GetBlocksParams = PaginationParams & WithRelationshipsParam;
 type GetDomainBlocksParams = PaginationParams;
 

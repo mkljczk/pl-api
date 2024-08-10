@@ -9,8 +9,8 @@ interface GetBookmarksParams extends PaginationParams {
 }
 
 type GetFavouritesParams = PaginationParams;
-type GetFollowRequestsParams = Exclude<PaginationParams, 'min_id'>;
-type GetEndorsementsParams = Exclude<PaginationParams, 'min_id'>;
+type GetFollowRequestsParams = Omit<PaginationParams, 'min_id'>;
+type GetEndorsementsParams = Omit<PaginationParams, 'min_id'>;
 type GetFollowedTagsParams = PaginationParams;
 
 interface CreateBookmarkFolderParams {

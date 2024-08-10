@@ -98,9 +98,9 @@ type GetStatusesParams = LanguageParam;
 
 type GetStatusContextParams = LanguageParam;
 
-type GetRebloggedByParams = Exclude<PaginationParams, 'min_id'>
+type GetRebloggedByParams = Omit<PaginationParams, 'min_id'>
 
-type GetFavouritedByParams = Exclude<PaginationParams, 'min_id'>
+type GetFavouritedByParams = Omit<PaginationParams, 'min_id'>
 
 interface EditStatusOptionalParams {
   sensitive?: boolean;

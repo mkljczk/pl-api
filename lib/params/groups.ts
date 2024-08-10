@@ -14,9 +14,9 @@ interface UpdateGroupParams {
   header?: File | '';
 }
 
-type GetGroupMembershipsParams = Exclude<PaginationParams, 'min_id'>;
-type GetGroupMembershipRequestsParams = Exclude<PaginationParams, 'min_id'>;
-type GetGroupBlocksParams = Exclude<PaginationParams, 'min_id'>;
+type GetGroupMembershipsParams = Omit<PaginationParams, 'min_id'>;
+type GetGroupMembershipRequestsParams = Omit<PaginationParams, 'min_id'>;
+type GetGroupBlocksParams = Omit<PaginationParams, 'min_id'>;
 
 export type {
   CreateGroupParams,
