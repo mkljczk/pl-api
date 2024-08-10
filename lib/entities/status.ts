@@ -13,6 +13,7 @@ import { tagSchema } from './tag';
 import { dateSchema, filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
+import { translationSchema } from './translation';
 
 const statusEventSchema = z.object({
   name: z.string().catch(''),
@@ -85,6 +86,10 @@ const baseStatusSchema = z.object({
   bookmark_folder: z.string().nullable().catch(null),
 
   event: statusEventSchema.nullable().catch(null),
+  translation: translationSchema.nullable().catch(null),
+
+  dislikes_count: z.number().catch(0),
+  disliked: z.coerce.boolean().catch(false),
 });
 
 const statusSchema = z.preprocess((status: any) => {
@@ -104,6 +109,11 @@ const statusSchema = z.preprocess((status: any) => {
       'bookmark_folder',
 
       'event',
+      'translation',
+    ])),
+    ...(pick(status.friendica || {}, [
+      'dislikes_count',
+      'disliked',
     ])),
     ...status,
   };

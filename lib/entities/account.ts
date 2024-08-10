@@ -152,7 +152,6 @@ const mutedAccountSchema = accountWithMovedAccountSchema.extend({
 
 type MutedAccount = z.infer<typeof mutedAccountSchema>;
 
-
 export {
   accountSchema,
   credentialAccountSchema,

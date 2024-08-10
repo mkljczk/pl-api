@@ -65,7 +65,6 @@ interface UpdateCredentialsParams {
     language?: string;
   };
 
-
   /** if true, html tags are stripped from all statuses requested from the API */
   no_rich_text?: boolean;
   /** if true, user's followers will be hidden*/

@@ -75,10 +75,10 @@ const audioAttachmentSchema = baseAttachmentSchema.extend({
       foreground: z.string().optional().catch(undefined),
       accent: z.string().optional().catch(undefined),
       duration: z.number().optional().catch(undefined),
-      original: z.object({
-        duration: z.number().optional().catch(undefined),
-        bitrate: z.number().nonnegative().optional().catch(undefined),
-      }).optional().catch(undefined),
+    }).optional().catch(undefined),
+    original: z.object({
+      duration: z.number().optional().catch(undefined),
+      bitrate: z.number().nonnegative().optional().catch(undefined),
     }).optional().catch(undefined),
   }).catch({}),
 });
