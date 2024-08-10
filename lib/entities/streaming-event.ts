@@ -76,7 +76,7 @@ const respondStreamingEventSchema = baseStreamingEventSchema.extend({
 });
 
 /** @see {@link https://docs.joinmastodon.org/methods/streaming/#events} */
-const streamingEventSchema = z.preprocess((event: any) => ({
+const streamingEventSchema: z.ZodType<StreamingEvent> = z.preprocess((event: any) => ({
   event: event.event?.replace(/^pleroma:/, ''),
   ...event,
 }), z.discriminatedUnion('event', [
@@ -90,8 +90,19 @@ const streamingEventSchema = z.preprocess((event: any) => ({
   chatUpdateStreamingEventSchema,
   followRelationshipsUpdateStreamingEventSchema,
   respondStreamingEventSchema,
-]));
+])) as any;
 
-type StreamingEvent = z.infer<typeof streamingEventSchema>;
+type StreamingEvent = z.infer<
+| typeof statusStreamingEventSchema
+| typeof stringStreamingEventSchema
+| typeof notificationStreamingEventSchema
+| typeof emptyStreamingEventSchema
+| typeof conversationStreamingEventSchema
+| typeof announcementStreamingEventSchema
+| typeof announcementReactionStreamingEventSchema
+| typeof chatUpdateStreamingEventSchema
+| typeof followRelationshipsUpdateStreamingEventSchema
+| typeof respondStreamingEventSchema
+>;
 
 export { streamingEventSchema, type StreamingEvent };

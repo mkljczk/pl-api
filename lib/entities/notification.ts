@@ -63,7 +63,7 @@ const eventParticipationRequestNotificationSchema = baseNotificationSchema.exten
 });
 
 /** @see {@link https://docs.joinmastodon.org/entities/Notification/} */
-const notificationSchema = z.preprocess((notification: any) => ({
+const notificationSchema: z.ZodType<Notification> = z.preprocess((notification: any) => ({
   ...notification,
   type: notification.type === 'pleroma:report'
     ? 'admin.report'
@@ -78,8 +78,18 @@ const notificationSchema = z.preprocess((notification: any) => ({
   emojiReactionNotificationSchema,
   chatMentionNotificationSchema,
   eventParticipationRequestNotificationSchema,
-]));
+])) as any;
 
-type Notification = z.infer<typeof notificationSchema>;
+type Notification = z.infer<
+| typeof accountNotificationSchema
+| typeof statusNotificationSchema
+| typeof reportNotificationSchema
+| typeof severedRelationshipNotificationSchema
+| typeof moderationWarningNotificationSchema
+| typeof moveNotificationSchema
+| typeof emojiReactionNotificationSchema
+| typeof chatMentionNotificationSchema
+| typeof eventParticipationRequestNotificationSchema
+>;
 
 export { notificationSchema, type Notification };
