@@ -10,10 +10,19 @@ const filterBadges = (tags?: string[]) =>
   tags?.filter(tag => tag.startsWith('badge:')).map(tag => roleSchema.parse({ id: tag, name: tag.replace(/^badge:/, '') }));
 
 const preprocessAccount = (account: any) => ({
-  verified: account.verified || account.pleroma?.tags?.includes('verified'),
+  username: account.username || account.acct.split('@')[0],
+  display_name: account.display_name.trim() || account.username,
   roles: account.roles?.length ? account.roles : filterBadges(account.pleroma?.tags),
   avatar_static: account.avatar_static || account.avatar,
   header_static: account.header_static || account.header,
+  source: account.source
+    ? { ...(pick(account.pleroma?.source || {}, [
+      'show_role', 'no_rich_text', 'discoverable', 'actor_type', 'show_birthday',
+    ])), ...account.source }
+    : undefined,
+  local: typeof account.pleroma?.is_local === 'boolean' ? account.pleroma.is_local : account.acct.split('@')[1] === undefined,
+  discoverable: account.discoverable || account.pleroma?.source?.discoverable,
+  verified: account.verified || account.pleroma?.tags?.includes('verified'),
   ...(pick(account.pleroma || {}, [
     'ap_id',
     'background_image',
@@ -28,6 +37,7 @@ const preprocessAccount = (account: any) => ({
     'accepts_chat_messages',
     'favicon',
     'birthday',
+    'deactivated',
 
     'settings_store',
     'chat_token',
@@ -39,14 +49,6 @@ const preprocessAccount = (account: any) => ({
     'location',
   ])),
   ...(pick(account.other_settings || {}), ['birthday', 'location']),
-  source: account.source
-    ? { ...(pick(account.pleroma?.source || {}, [
-      'show_role', 'no_rich_text', 'discoverable', 'actor_type', 'show_birthday',
-    ])), ...account.source }
-    : undefined,
-  discoverable: account.discoverable || account.pleroma?.source?.discoverable,
-  username: account.username || account.acct.split('@')[0],
-  display_name: account.display_name.trim() || account.username,
   ...account,
 });
 
@@ -97,8 +99,10 @@ const baseAccountSchema = z.object({
   accepts_chat_messages: z.boolean().nullable().catch(null),
   favicon: z.string().optional().catch(undefined),
   birthday: z.string().date().optional().catch(undefined),
+  deactivated: z.boolean().optional().catch(undefined),
 
   location: z.string().optional().catch(undefined),
+  local: z.boolean().optional().catch(false),
 
   avatar_description: z.string().catch(''),
   enable_rss: z.boolean().catch(false),

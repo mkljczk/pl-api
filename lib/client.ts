@@ -2102,7 +2102,7 @@ class PlApiClient {
     profileDirectory: async (params?: ProfileDirectoryParams) => {
       const response = await this.request('/api/v1/directory', { params });
 
-      return filteredArray(customEmojiSchema).parse(response.json);
+      return filteredArray(accountSchema).parse(response.json);
     },
 
     /**
