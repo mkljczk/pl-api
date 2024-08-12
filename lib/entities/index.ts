@@ -40,6 +40,7 @@ export * from './mention';
 export * from './notification';
 export * from './notification-policy';
 export * from './notification-request';
+export * from './oauth-token';
 export * from './poll';
 export * from './preview-card';
 export * from './relationship';

@@ -96,6 +96,8 @@ const getFeatures = (instance?: Instance) => {
   const federation = instance?.pleroma.metadata.federation.enabled;
 
   return {
+    version: v,
+
     /**
      * Ability to set description of profile avatar and header.
      * @see PATCH /api/v1/accounts/update_credentials
@@ -337,6 +339,15 @@ const getFeatures = (instance?: Instance) => {
       features.includes('pleroma_custom_emoji_reactions'),
       features.includes('custom_emoji_reactions'),
       v.software === PLEROMA && gte(v.version, '2.6.0'),
+    ]),
+
+    /**
+     * @see POST /api/v1/accounts/delete
+     * @see POST /api/pleroma/delete_account
+     */
+    deleteAccount: any([
+      v.software === GOTOSOCIAL,
+      v.software === PLEROMA,
     ]),
 
     /**
@@ -632,6 +643,15 @@ const getFeatures = (instance?: Instance) => {
     manageAccountAliases: v.software === PLEROMA,
 
     /**
+     * @see GET /api/pleroma/accounts/mfa
+     * @see GET /api/pleroma/accounts/mfa/backup_codes
+     * @see GET /api/pleroma/accounts/mfa/setup/:method
+     * @see POST /api/pleroma/accounts/mfa/confirm/:method
+     * @see DELETE /api/pleroma/accounts/mfa/:method
+     */
+    manageMfa: v.software === PLEROMA,
+
+    /**
      * Can perform moderation actions with account and reports.
      * @see {@link https://docs.joinmastodon.org/methods/admin/}
      * @see GET /api/v1/admin/reports
@@ -867,17 +887,22 @@ const getFeatures = (instance?: Instance) => {
     ]),
 
     /**
-     * Ability to manage account security settings.
-     * @see POST /api/pleroma/change_password
-     * @see POST /api/pleroma/change_email
-     * @see POST /api/pleroma/delete_account
      * @see POST /api/v1/user/email_change
-     * @see POST /api/v1/user/password_change
-     * @see POST /api/v1/accounts/delete_account
      */
-    security: any([
-      v.software === PLEROMA,
+    changeEmail: any([
       v.software === GOTOSOCIAL,
+      v.software === PLEROMA,
+    ]),
+
+    /**
+     * @see POST /api/v1/user/password_change
+     * @see POST /api/v1/settings/change_password
+     * @see POST /api/pleroma/change_password
+     */
+    changePassword: any([
+      v.software === GOTOSOCIAL,
+      v.software === MITRA,
+      v.software === PLEROMA,
     ]),
 
     /**

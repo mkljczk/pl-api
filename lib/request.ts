@@ -43,8 +43,8 @@ interface RequestBody {
 type RequestMeta = Pick<RequestBody, 'idempotencyKey' | 'onUploadProgress' | 'signal'>;
 
 function request<T = any>(this: PlApiClient, input: URL | RequestInfo, {
-  method = 'GET',
   body,
+  method = body ? 'POST' : 'GET',
   params,
   onUploadProgress,
   signal,
