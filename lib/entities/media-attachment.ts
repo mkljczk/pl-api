@@ -18,7 +18,7 @@ const baseAttachmentSchema = z.object({
   id: z.string(),
   type: z.string(),
   url: z.string().url().catch(''),
-  preview_url: z.string().url().nullable().catch(null),
+  preview_url: z.string().url().catch(''),
   remote_url: z.string().url().nullable().catch(null),
   description: z.string().catch(''),
   blurhash: blurhashSchema.nullable().catch(null),
@@ -90,6 +90,7 @@ const unknownAttachmentSchema = baseAttachmentSchema.extend({
 /** @see {@link https://docs.joinmastodon.org/entities/MediaAttachment} */
 const mediaAttachmentSchema = z.preprocess((data: any) => ({
   mime_type: data.pleroma?.mime_type,
+  preview_url: data.url,
   ...data,
 }), z.discriminatedUnion('type', [
   imageAttachmentSchema,
