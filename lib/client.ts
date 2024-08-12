@@ -1461,6 +1461,37 @@ class PlApiClient {
      */
     getStatusQuotes: async (statusId: string, params?: GetStatusQuotesParams) =>
       this.#paginatedGet<Status>(`/api/v1/pleroma/statuses/${statusId}/quotes`, { params }, statusSchema),
+
+    /**
+     * Returns the list of accounts that have disliked the status as known by the current server
+     * Requires `features.statusDislikes`.
+     * @see {@link https://github.com/friendica/friendica/blob/2024.06-rc/doc/API-Friendica.md#get-apifriendicastatusesiddisliked_by}
+     */
+    getDislikedBy: async (statusId: string) => {
+      const response = await this.request(`/api/friendica/statuses/${statusId}/disliked_by`);
+
+      return filteredArray(accountSchema).parse(response.json);
+    },
+
+    /**
+     * Marks the given status as disliked by this user
+     * @see {@link https://github.com/friendica/friendica/blob/2024.06-rc/doc/API-Friendica.md#post-apifriendicastatusesiddislike}
+     */
+    dislikeStatus: async (statusId: string) => {
+      const response = await this.request(`/api/friendica/statuses/${statusId}/dislike`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
+
+    /**
+     * Removes the dislike mark (if it exists) on this status for this user
+     * @see {@link https://github.com/friendica/friendica/blob/2024.06-rc/doc/API-Friendica.md#post-apifriendicastatusesidundislike}
+     */
+    undislikeStatus: async (statusId: string) => {
+      const response = await this.request(`/api/friendica/statuses/${statusId}/undislike`, { method: 'POST' });
+
+      return statusSchema.parse(response.json);
+    },
   };
 
   public readonly media = {

@@ -340,13 +340,6 @@ const getFeatures = (instance?: Instance) => {
     ]),
 
     /**
-     * @see POST /api/friendica/statuses/:id/dislike
-     * @see POST /api/friendica/statuses/:id/undislike
-     * @see GET  /api/friendica/statuses/:id/disliked_by
-     */
-    dislikes: v.software === FRIENDICA && gte(v.version, '2023.3.0'),
-
-    /**
      * Allow to register on a given domain
      * @see GET /api/v1/pleroma/admin/domains
      * @see POST /api/v1/pleroma/admin/domains
@@ -905,6 +898,13 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v1/statuses
      */
     spoilers: true,
+
+    /**
+     * @see POST /api/friendica/statuses/:id/dislike
+     * @see POST /api/friendica/statuses/:id/undislike
+     * @see GET  /api/friendica/statuses/:id/disliked_by
+     */
+    statusDislikes: v.software === FRIENDICA && gte(v.version, '2023.3.0'),
 
     /**
      * Can display suggested accounts.
