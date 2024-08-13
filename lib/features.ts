@@ -567,14 +567,6 @@ const getFeatures = (instance?: Instance) => {
     ]),
 
     /**
-     * Pleroma import API.
-     * @see POST /api/pleroma/follow_import
-     * @see POST /api/pleroma/blocks_import
-     * @see POST /api/pleroma/mutes_import
-     */
-    import: v.software === PLEROMA,
-
-    /**
      * Pleroma import endpoints.
      * @see POST /api/pleroma/follow_import
      * @see POST /api/pleroma/blocks_import

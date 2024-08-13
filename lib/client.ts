@@ -1111,6 +1111,54 @@ class PlApiClient {
         return response.json as {};
       },
     },
+
+    /**
+     * Imports your follows, for example from a Mastodon CSV file.
+     *
+     * Requires `features.importData`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromafollow_import}
+     */
+    importFollows: async (list: File | string) => {
+      const response = await this.request('/api/pleroma/follow_import', {
+        method: 'POST',
+        body: { list },
+        contentType: '',
+      });
+
+      return z.string().parse(response.json);
+    },
+
+    /**
+     * Imports your blocks.
+     *
+     * Requires `features.importData`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromablocks_import}
+     */
+    importBlocks: async (list: File | string) => {
+      const response = await this.request('/api/pleroma/blocks_import', {
+        method: 'POST',
+        body: { list },
+        contentType: '',
+      });
+
+      return z.string().parse(response.json);
+    },
+
+    /**
+     * Imports your mutes.
+     *
+     * Requires `features.importData`.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromamutes_import}
+     */
+    importMutes: async (list: File | string) => {
+      const response = await this.request('/api/pleroma/mutes_import', {
+        method: 'POST',
+        body: { list },
+        contentType: '',
+      });
+
+      return z.string().parse(response.json);
+    },
   };
 
   public readonly filtering = {
