@@ -86,6 +86,12 @@ const GLITCH = 'glitch';
 // NOTE: Rebased is named 'soapbox' for legacy reasons.
 const REBASED = 'soapbox';
 
+/**
+ * Pl, fork of Pleroma developed by pl-api author.
+ * @see {@link https://github.com/mkljczk/pl}
+ */
+const PL = 'pl';
+
 /** Backend name reserved only for tests. */
 const UNRELEASED = 'unreleased';
 
@@ -93,7 +99,7 @@ const UNRELEASED = 'unreleased';
 const getFeatures = (instance?: Instance) => {
   const v = parseVersion(instance?.version || '');
   const features = instance?.pleroma.metadata.features || [];
-  const federation = instance?.pleroma.metadata.federation.enabled;
+  const federation = !!instance?.pleroma.metadata.federation.enabled;
 
   return {
     version: v,
@@ -140,7 +146,10 @@ const getFeatures = (instance?: Instance) => {
      * Ability to set one's location on their profile.
      * @see PATCH /api/v1/accounts/update_credentials
      */
-    accountLocation: v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+    accountLocation: any([
+      v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+      v.software === PLEROMA && v.build === PL,
+    ]),
 
     /**
      * Look up an account by the acct.
@@ -279,7 +288,10 @@ const getFeatures = (instance?: Instance) => {
      * Ability to delete a chat.
      * @see DELETE /api/v1/pleroma/chats/:id
      */
-    chatsDelete: v.build === REBASED,
+    chatsDelete: any([
+      v.build === REBASED,
+      v.software === PLEROMA && v.build === PL,
+    ]),
 
     /**
      * Mastodon's newer solution for direct messaging.
@@ -661,6 +673,7 @@ const getFeatures = (instance?: Instance) => {
     mastodonAdmin: any([
       v.software === MASTODON,
       v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
+      v.software === PLEROMA && v.build === PL,
       v.software === GOTOSOCIAL,
     ]),
 
@@ -760,6 +773,7 @@ const getFeatures = (instance?: Instance) => {
     postLanguages: any([
       v.software === MASTODON,
       v.software === PLEROMA && v.build === REBASED,
+      v.software === PLEROMA && v.build === PL,
       v.software === GOTOSOCIAL,
     ]),
 
@@ -1025,11 +1039,8 @@ const parseVersion = (version: string): Backend => {
   }) : null;
   const compat = match ? semverParse(match[1]) || semverCoerce(match[1]) : null;
   if (match && semver && compat) {
-    let build = semver.build[0];
-    if (build === 'pl') build = 'soapbox';
-
     return {
-      build,
+      build: semver.build[0],
       compatVersion: compat.version,
       software: match[2] || MASTODON,
       version: semver.version.split('-')[0],
@@ -1060,7 +1071,9 @@ export {
   AKKOMA,
   GLITCH,
   REBASED,
+  PL,
   UNRELEASED,
   type Features,
+  type Backend as BackendVersion,
   getFeatures,
 };

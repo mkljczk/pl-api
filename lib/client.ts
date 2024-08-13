@@ -317,7 +317,7 @@ class PlApiClient {
      * Get multiple accounts
      * View information about multiple profiles.
      *
-     * Requires `features.getAccounts`.
+     * Requires features{@link Features['getAccounts']}.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#index}
      */
     getAccounts: async (accountId: string[]) => {
@@ -453,7 +453,7 @@ class PlApiClient {
      * Find familiar followers
      * Obtain a list of all accounts that follow a given account, filtered for accounts you follow.
      *
-     * Requires `features.familiarFollowers`.
+     * Requires features{@link Features['familiarFollowers']}.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#familiar_followers}
      */
     getFamiliarFollowers: async (accountIds: string[]) => {
@@ -501,7 +501,7 @@ class PlApiClient {
      * Endorsements
      * Returns endorsed accounts
      *
-     * Requires `features.accountEndorsements`.
+     * Requires features{@link Features['accountEndorsements']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromaaccountsidendorsements}
      */
     getAccountEndorsements: async (accountId: string, params?: GetAccountEndorsementsParams) => {
@@ -514,7 +514,7 @@ class PlApiClient {
      * Birthday reminders
      * Birthday reminders about users you follow.
      *
-     * Requires `features.birthdays`.
+     * Requires features{@link Features['birthdays']}.
      */
     getBirthdays: async (day: number, month: number) => {
       const response = await this.request('/api/v1/pleroma/birthdays', { params: { day, month } });
@@ -635,7 +635,7 @@ class PlApiClient {
      * View all followed tags
      * List your followed hashtags.
      *
-     * Requires `features.followHashtags`.
+     * Requires features{@link Features['followHashtags']}.
      * @see {@link https://docs.joinmastodon.org/methods/followed_tags/#get}
      */
     getFollowedTags: async (params?: GetFollowedTagsParams) =>
@@ -678,7 +678,7 @@ class PlApiClient {
      * View follow suggestions
      * Accounts that are promoted by staff, or that the user has had past positive interactions with, but is not yet following.
      *
-     * Requires `features.suggestions`.
+     * Requires features{@link Features['suggestions']}.
      * @see {@link https://docs.joinmastodon.org/methods/suggestions/#v2}
      */
     getSuggestions: async (limit?: number) => {
@@ -694,7 +694,7 @@ class PlApiClient {
      * Remove a suggestion
      * Remove an account from follow suggestions.
      *
-     * Requires `features.suggestions`.
+     * Requires features{@link Features['suggestions']}.
      * @see {@link https://docs.joinmastodon.org/methods/suggestions/#remove}
      */
     dismissSuggestions: async (accountId: string) => {
@@ -706,7 +706,7 @@ class PlApiClient {
     /**
      * Gets user bookmark folders
      *
-     * Requires `features.bookmarkFolders`.
+     * Requires features{@link Features['bookmarkFolders']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apiv1pleromabookmark_folders}
      */
     getBookmarkFolders: async () => {
@@ -718,7 +718,7 @@ class PlApiClient {
     /**
      * Creates a bookmark folder
      *
-     * Requires `features.bookmarkFolders`.
+     * Requires features{@link Features['bookmarkFolders']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#post-apiv1pleromabookmark_folders}
      */
     createBookmarkFolder: async (params: CreateBookmarkFolderParams) => {
@@ -730,7 +730,7 @@ class PlApiClient {
     /**
      * Updates a bookmark folder
      *
-     * Requires `features.bookmarkFolders`.
+     * Requires features{@link Features['bookmarkFolders']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#patch-apiv1pleromabookmark_foldersid}
      */
     updateBookmarkFolder: async (bookmarkFolderId: string, params: UpdateBookmarkFolderParams) => {
@@ -742,7 +742,7 @@ class PlApiClient {
     /**
      * Deletes a bookmark folder
      *
-     * Requires `features.bookmarkFolders`.
+     * Requires features{@link Features['bookmarkFolders']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apiv1pleromabookmark_foldersid}
      */
     deleteBookmarkFolder: async (bookmarkFolderId: string) => {
@@ -757,7 +757,7 @@ class PlApiClient {
      * Register an account
      * Creates a user and account records. Returns an account access token for the app that initiated the request. The app should save this token for later, and should wait for the user to confirm their account by clicking a link in their email inbox.
      *
-     * Requires `features.accountCreation`
+     * Requires features{@link Features['accountCreation`
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#create}
      */
     createAccount: async (params: CreateAccountParams) => {
@@ -841,7 +841,7 @@ class PlApiClient {
     /**
      * Create a user backup archive
      *
-     * Requires `features.accountBackups`.
+     * Requires features{@link Features['accountBackups']}.
      */
     createBackup: async () => {
       const response = await this.request('/api/v1/pleroma/backups', { method: 'POST' });
@@ -852,7 +852,7 @@ class PlApiClient {
     /**
      * List user backups
      *
-     * Requires `features.accountBackups`.
+     * Requires features{@link Features['accountBackups']}.
      */
     getBackups: async () => {
       const response = await this.request('/api/v1/pleroma/backups');
@@ -863,7 +863,7 @@ class PlApiClient {
     /**
      * Get aliases of the current account
      *
-     * Requires `features.manageAccountAliases`.
+     * Requires features{@link Features['manageAccountAliases']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-aliases-of-the-current-account}
      */
     getAccountAliases: async () => {
@@ -875,7 +875,7 @@ class PlApiClient {
     /**
      * Add alias to the current account
      *
-     * Requires `features.manageAccountAliases`.
+     * Requires features{@link Features['manageAccountAliases']}.
      * @param alias - the nickname of the alias to add, e.g. foo@example.org.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#add-alias-to-the-current-account}
      */
@@ -888,7 +888,7 @@ class PlApiClient {
     /**
      * Delete alias from the current account
      *
-     * Requires `features.manageAccountAliases`.
+     * Requires features{@link Features['manageAccountAliases']}.
      * @param alias - the nickname of the alias to add, e.g. foo@example.org.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-alias-from-the-current-account}
      */
@@ -901,7 +901,7 @@ class PlApiClient {
     /**
      * Retrieve a list of active sessions for the user
      *
-     * Requires `features.sessions`.
+     * Requires features{@link Features['sessions']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apioauth_tokens}
      */
     getOauthTokens: async () => {
@@ -913,7 +913,7 @@ class PlApiClient {
     /**
      * Revoke a user session by its ID
      *
-     * Requires `features.sessions`.
+     * Requires features{@link Features['sessions']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apioauth_tokensid}
      */
     deleteOauthToken: async (oauthTokenId: number) => {
@@ -964,7 +964,7 @@ class PlApiClient {
     /**
      * Request password reset e-mail
      *
-     * Requires `features.resetPassword`.
+     * Requires features{@link Features['resetPassword']}.
      */
     resetPassword: async (email?: string, nickname?: string) => {
       const response = await this.request('/auth/password', {
@@ -976,7 +976,7 @@ class PlApiClient {
     },
 
     /**
-     * Requires `features.changeEmail`.
+     * Requires features{@link Features['changeEmail']}.
      */
     changeEmail: async (email: string, password: string) => {
       let response;
@@ -1007,7 +1007,7 @@ class PlApiClient {
     },
 
     /**
-     * Requires `features.deleteAccount`.
+     * Requires features{@link Features['deleteAccount']}.
      */
     deleteAccount: async (password: string) => {
       let response;
@@ -1032,7 +1032,23 @@ class PlApiClient {
     },
 
     /**
-     * Requires `features.accountMoving`.
+     * Disable an account
+     *
+     * Requires features{@link Features['disableAccount']}.
+     */
+    disableAccount: async (password: string) => {
+      const response = await this.request('/api/pleroma/disable_account', {
+        method: 'POST',
+        body: { password },
+      });
+
+      if (response.json?.error) throw response.json.error;
+
+      return response.json as {};
+    },
+
+    /**
+     * Requires features{@link Features['accountMoving']}.
      */
     moveAccount: async (target_account: string, password: string) => {
       const response = await this.request('/api/pleroma/move_account', {
@@ -1047,7 +1063,7 @@ class PlApiClient {
 
     mfa: {
       /**
-       * Requires `features.manageMfa`.
+       * Requires features{@link Features['manageMfa`.
        */
       getMfaSettings: async () => {
         const response = await this.request('/api/pleroma/accounts/mfa');
@@ -1061,7 +1077,7 @@ class PlApiClient {
       },
 
       /**
-       * Requires `features.manageMfa`.
+       * Requires features{@link Features['manageMfa`.
        */
       getMfaBackupCodes: async () => {
         const response = await this.request('/api/pleroma/accounts/mfa/backup_codes');
@@ -1072,7 +1088,7 @@ class PlApiClient {
       },
 
       /**
-       * Requires `features.manageMfa`.
+       * Requires features{@link Features['manageMfa`.
        */
       getMfaSetup: async (method: 'totp') => {
         const response = await this.request(`/api/pleroma/accounts/mfa/setup/${method}`);
@@ -1084,7 +1100,7 @@ class PlApiClient {
       },
 
       /**
-       * Requires `features.manageMfa`.
+       * Requires features{@link Features['manageMfa`.
        */
       confirmMfaSetup: async (method: 'totp', code: string, password: string) => {
         const response = await this.request(`/api/pleroma/accounts/mfa/confirm/${method}`, {
@@ -1098,7 +1114,7 @@ class PlApiClient {
       },
 
       /**
-       * Requires `features.manageMfa`.
+       * Requires features{@link Features['manageMfa`.
        */
       disableMfa: async (method: 'totp', password: string) => {
         const response = await this.request(`/api/pleroma/accounts/mfa/${method}`, {
@@ -1115,7 +1131,7 @@ class PlApiClient {
     /**
      * Imports your follows, for example from a Mastodon CSV file.
      *
-     * Requires `features.importData`.
+     * Requires features{@link Features['importData']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromafollow_import}
      */
     importFollows: async (list: File | string) => {
@@ -1131,7 +1147,7 @@ class PlApiClient {
     /**
      * Imports your blocks.
      *
-     * Requires `features.importData`.
+     * Requires features{@link Features['importData']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromablocks_import}
      */
     importBlocks: async (list: File | string) => {
@@ -1147,7 +1163,7 @@ class PlApiClient {
     /**
      * Imports your mutes.
      *
-     * Requires `features.importData`.
+     * Requires features{@link Features['importData']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromamutes_import}
      */
     importMutes: async (list: File | string) => {
@@ -1262,7 +1278,7 @@ class PlApiClient {
      * View all filters
      * Obtain a list of all filter groups for the current user.
      *
-     * Requires `features.filters` or `features.filtersV2`.
+     * Requires features{@link Features['filters']} or features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#get}
      */
     getFilters: async () => {
@@ -1275,7 +1291,7 @@ class PlApiClient {
      * View a specific filter
      * Obtain a single filter group owned by the current user.
      *
-     * Requires `features.filters` or `features.filtersV2`.
+     * Requires features{@link Features['filters']} or features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#get-one}
      */
     getFilter: async (filterId: string) => {
@@ -1292,7 +1308,7 @@ class PlApiClient {
      * Create a filter
      * Create a filter group with the given parameters.
      *
-     * Requires `features.filters` or `features.filtersV2`.
+     * Requires features{@link Features['filters']} or features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#create}
      */
     createFilter: async (params: CreateFilterParams) => {
@@ -1318,7 +1334,7 @@ class PlApiClient {
      * Update a filter
      * Update a filter group with the given parameters.
      *
-     * Requires `features.filters` or `features.filtersV2`.
+     * Requires features{@link Features['filters']} or features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#update}
      */
     updateFilter: async (filterId: string, params: UpdateFilterParams) => {
@@ -1344,7 +1360,7 @@ class PlApiClient {
      * Delete a filter
      * Delete a filter group with the given id.
      *
-     * Requires `features.filters` or `features.filtersV2`.
+     * Requires features{@link Features['filters']} or features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#delete}
      */
     deleteFilter: async (filterId: string) => {
@@ -1362,7 +1378,7 @@ class PlApiClient {
      * View keywords added to a filter
      * List all keywords attached to the current filter group.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-get}
      */
     getFilterKeywords: async (filterId: string) => {
@@ -1375,7 +1391,7 @@ class PlApiClient {
      * Add a keyword to a filter
      * Add the given keyword to the specified filter group
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-create}
      */
     addFilterKeyword: async (filterId: string, keyword: string, whole_word?: boolean) => {
@@ -1391,7 +1407,7 @@ class PlApiClient {
      * View a single keyword
      * Get one filter keyword by the given id.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-get-one}
      */
     getFilterKeyword: async (filterId: string) => {
@@ -1404,7 +1420,7 @@ class PlApiClient {
      * Edit a keyword within a filter
      * Update the given filter keyword.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-update}
      */
     updateFilterKeyword: async (filterId: string, keyword: string, whole_word?: boolean) => {
@@ -1420,7 +1436,7 @@ class PlApiClient {
      * Remove keywords from a filter
      * Deletes the given filter keyword.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#keywords-delete}
      */
     deleteFilterKeyword: async (filterId: string) => {
@@ -1433,7 +1449,7 @@ class PlApiClient {
      * View all status filters
      * Obtain a list of all status filters within this filter group.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-get}
      */
     getFilterStatuses: async (filterId: string) => {
@@ -1446,7 +1462,7 @@ class PlApiClient {
      * Add a status to a filter group
      * Add a status filter to the current filter group.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-add}
      */
     addFilterStatus: async (filterId: string, statusId: string) => {
@@ -1462,7 +1478,7 @@ class PlApiClient {
      * View a single status filter
      * Obtain a single status filter.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-get-one}
      */
     getFilterStatus: async (statusId: string) => {
@@ -1475,7 +1491,7 @@ class PlApiClient {
      * Remove a status from a filter group
      * Remove a status filter from the current filter group.
      *
-     * Requires `features.filtersV2`.
+     * Requires features{@link Features['filtersV2']}.
      * @see {@link https://docs.joinmastodon.org/methods/filters/#statuses-remove}
      */
     deleteFilterStatus: async (statusId: string) => {
@@ -1516,7 +1532,7 @@ class PlApiClient {
      * View multiple statuses
      * Obtain information about multiple statuses.
      *
-     * Requires `features.getStatuses`.
+     * Requires features{@link Features['getStatuses']}.
      * @see {@link https://docs.joinmastodon.org/methods/statuses/#index}
     */
     getStatuses: async (statusIds: string[], params?: GetStatusesParams) => {
@@ -1720,7 +1736,7 @@ class PlApiClient {
     /**
      * Get an object of emoji to account mappings with accounts that reacted to the post
      *
-     * Requires `features.emojiReacts`.
+     * Requires features{@link Features['emojiReacts']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apiv1pleromastatusesidreactions}
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#get-apiv1pleromastatusesidreactionsemoji}
      */
@@ -1733,8 +1749,8 @@ class PlApiClient {
     /**
      * React to a post with a unicode emoji
      *
-     * Requires `features.emojiReacts`.
-     * Using custom emojis requires `features.customEmojiReacts`.
+     * Requires features{@link Features['emojiReacts']}.
+     * Using custom emojis requires features{@link Features['customEmojiReacts']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#put-apiv1pleromastatusesidreactionsemoji}
      */
     createStatusReaction: async (statusId: string, emoji: string) => {
@@ -1744,9 +1760,9 @@ class PlApiClient {
     },
 
     /**
-     * Remove a reaction to a post with a unicode emoji¶
+     * Remove a reaction to a post with a unicode emoji
      *
-     * Requires `features.emojiReacts`.
+     * Requires features{@link Features['emojiReacts']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#delete-apiv1pleromastatusesidreactionsemoji}
      */
     deleteStatusReaction: async (statusId: string, emoji: string) => {
@@ -1758,7 +1774,7 @@ class PlApiClient {
     /**
      * View quotes for a given status
      *
-     * Requires `features.quotePosts`.
+     * Requires features{@link Features['quotePosts']}.
      */
     getStatusQuotes: async (statusId: string, params?: GetStatusQuotesParams) =>
       this.#paginatedGet<Status>(`/api/v1/pleroma/statuses/${statusId}/quotes`, { params }, statusSchema),
@@ -1766,7 +1782,7 @@ class PlApiClient {
     /**
      * Returns the list of accounts that have disliked the status as known by the current server
      *
-     * Requires `features.statusDislikes`.
+     * Requires features{@link Features['statusDislikes']}.
      * @see {@link https://github.com/friendica/friendica/blob/2024.06-rc/doc/API-Friendica.md#get-apifriendicastatusesiddisliked_by}
      */
     getDislikedBy: async (statusId: string) => {
@@ -1995,13 +2011,13 @@ class PlApiClient {
     },
 
     /**
-     * Requires `features.groups`.
+     * Requires features{@link Features['groups']}.
      */
     groupTimeline: async (groupId: string, params?: GroupTimelineParams) =>
       this.#paginatedGet<Status>(`/api/v1/timelines/group/${groupId}`, { params }, statusSchema),
 
     /**
-     * Requires `features.bubbleTimeline`.
+     * Requires features{@link Features['bubbleTimeline']}.
      */
     bubbleTimeline: async (params?: BubbleTimelineParams) =>
       this.#paginatedGet<Status>('/api/v1/timelines/bubble', { params }, statusSchema),
@@ -2267,7 +2283,7 @@ class PlApiClient {
     /**
      * An endpoint to delete multiple statuses by IDs.
      *
-     * Requires `features.notificationsDismissMultiple`.
+     * Requires features{@link Features['notificationsDismissMultiple']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/differences_in_mastoapi_responses/#delete-apiv1notificationsdestroy_multiple}
      */
     dismissMultipleNotifications: async (notificationIds: string[]) => {
@@ -2340,7 +2356,7 @@ class PlApiClient {
     /**
      * Searches for locations
      *
-     * Requires `features.events`.
+     * Requires features{@link Features['events']}.
      * @see {@link https://github.com/mkljczk/pl/blob/fork/docs/development/API/pleroma_api.md#apiv1pleromasearchlocation}
      */
     searchLocation: async (q: string, meta?: RequestMeta) => {
@@ -3139,14 +3155,14 @@ class PlApiClient {
       this.#paginatedGet<Chat>('/api/v2/pleroma/chats', { params }, chatSchema),
 
     /**
-     * Getting the messages for a Chat¶
+     * Getting the messages for a Chat
      * For a given Chat id, you can get the associated messages with
      */
     getChatMessages: async (chatId: string, params?: GetChatMessagesParams) =>
       this.#paginatedGet<ChatMessage>(`/api/v1/pleroma/chats/${chatId}/messages`, { params }, chatMessageSchema),
 
     /**
-     * Posting a chat message¶
+     * Posting a chat message
      * Posting a chat message for given Chat id works like this:
      * @see {@link https://docs.pleroma.social/backend/development/API/chats/#posting-a-chat-message}
      */
@@ -3170,7 +3186,7 @@ class PlApiClient {
     /**
      * Deleting a chat
      *
-     * Requires `features.chatsDelete`.
+     * Requires features{@link Features['chatsDelete']}.
      */
     deleteChat: async (chatId: string) => {
       const response = await this.request(`/api/v1/pleroma/chats/${chatId}`, { method: 'DELETE' });
