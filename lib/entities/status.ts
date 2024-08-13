@@ -87,7 +87,7 @@ const baseStatusSchema = z.object({
   bookmark_folder: z.string().nullable().catch(null),
 
   event: statusEventSchema.nullable().catch(null),
-  translation: translationSchema.nullable().catch(null),
+  translation: translationSchema.nullable().or(z.literal(false)).catch(null),
 
   dislikes_count: z.number().catch(0),
   disliked: z.coerce.boolean().catch(false),

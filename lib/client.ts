@@ -218,6 +218,7 @@ class PlApiClient {
         previous: getMore(getPrevLink(response)),
         next: getMore(getNextLink(response)),
         items: filteredArray(schema).parse(response.json) as Array<T>,
+        partial: response.status === 206,
       };
     } : null;
 
@@ -227,6 +228,7 @@ class PlApiClient {
       previous: getMore(getPrevLink(response)),
       next: getMore(getNextLink(response)),
       items: filteredArray(schema).parse(response.json) as Array<T>,
+      partial: response.status === 206,
     };
   };
 
