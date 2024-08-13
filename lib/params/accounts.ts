@@ -1,8 +1,8 @@
-import type { OnlyEventsParam, OnlyMediaParam, PaginationParams, WithMutedParam, WithRelationshipsParam } from './common';
+import type { LanguageParam, OnlyEventsParam, OnlyMediaParam, PaginationParams, WithMutedParam, WithRelationshipsParam } from './common';
 
 type GetAccountParams = WithMutedParam;
 
-interface GetAccountStatusesParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam {
+interface GetAccountStatusesParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam, LanguageParam {
   /** Boolean. Filter out statuses in reply to a different account. */
   exclude_replies?: boolean;
   /** Boolean. Filter for pinned statuses only. Defaults to false, which includes all statuses. Pinned statuses do not receive special priority in the order of the returned results. */

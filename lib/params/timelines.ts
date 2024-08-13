@@ -1,6 +1,6 @@
-import type { OnlyEventsParam, OnlyMediaParam, PaginationParams, WithMutedParam } from './common';
+import type { LanguageParam, OnlyEventsParam, OnlyMediaParam, PaginationParams, WithMutedParam } from './common';
 
-interface PublicTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam {
+interface PublicTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam, LanguageParam {
   /** Boolean. Show only local statuses? Defaults to false. */
   local?: boolean;
   /** Boolean. Show only remote statuses? Defaults to false. */
@@ -13,7 +13,7 @@ interface PublicTimelineParams extends PaginationParams, WithMutedParam, OnlyEve
   instance?: string;
 }
 
-interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam {
+interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam, LanguageParam {
   /** Array of String. Return statuses that contain any of these additional tags. */
   any?: string[];
   /** Array of String. Return statuses that contain all of these additional tags. */
@@ -26,11 +26,11 @@ interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEv
   remote?: boolean;
 }
 
-type HomeTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam;
-type LinkTimelineParams = PaginationParams & WithMutedParam;
-type ListTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam;
+type HomeTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam & LanguageParam;
+type LinkTimelineParams = PaginationParams & WithMutedParam & LanguageParam;
+type ListTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam & LanguageParam;
 
-interface GetConversationsParams extends PaginationParams {
+interface GetConversationsParams extends PaginationParams, LanguageParam {
   /**
    * Only return conversations with the given recipients (a list of user ids).
    * Requires `features.conversationsByRecipients`.
@@ -49,8 +49,8 @@ interface SaveMarkersParams {
   };
 }
 
-type GroupTimelineParams = PaginationParams & WithMutedParam & OnlyMediaParam;
-type BubbleTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam & OnlyMediaParam;
+type GroupTimelineParams = PaginationParams & WithMutedParam & OnlyMediaParam & LanguageParam;
+type BubbleTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam & OnlyMediaParam & LanguageParam;
 
 export type {
   PublicTimelineParams,

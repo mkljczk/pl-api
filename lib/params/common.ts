@@ -12,6 +12,7 @@ interface PaginationParams {
 interface WithMutedParam {
   /**
    * Boolean. Also show statuses from muted users. Default to false.
+   *
    * Requires `features.timelinesWithMuted`.
    */
   with_muted?: boolean;
@@ -32,10 +33,19 @@ interface OnlyMediaParam {
 
 interface OnlyEventsParam {
   /**
-   * Bolean. Filter out statuses without events.
+   * Boolean. Filter out statuses without events.
+   *
    * Requires `features.events`.
    */
   only_events?: boolean;
+}
+
+interface LanguageParam {
+  /**
+   * Fetch a translation in given language
+   *
+   * Requires `features.fetchStatusesWithTranslation`.
+   */
 }
 
 export type {
@@ -44,4 +54,5 @@ export type {
   WithRelationshipsParam,
   OnlyMediaParam,
   OnlyEventsParam,
+  LanguageParam,
 };
