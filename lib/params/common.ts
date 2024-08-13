@@ -46,6 +46,7 @@ interface LanguageParam {
    *
    * Requires `features.fetchStatusesWithTranslation`.
    */
+  language?: string;
 }
 
 export type {
