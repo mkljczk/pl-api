@@ -103,6 +103,7 @@ import type {
   AdminPerformAccountActionParams,
   AdminUpdateDomainBlockParams,
   AdminUpdateReportParams,
+  BubbleTimelineParams,
   CreateAccountParams,
   CreateApplicationParams,
   CreateBookmarkFolderParams,
@@ -1945,8 +1946,17 @@ class PlApiClient {
       return markersSchema.parse(response.json);
     },
 
+    /**
+     * Requires `features.groups`.
+     */
     groupTimeline: async (groupId: string, params?: GroupTimelineParams) =>
       this.#paginatedGet<Status>(`/api/v1/timelines/group/${groupId}`, { params }, statusSchema),
+
+    /**
+     * Requires `features.bubbleTimeline`.
+     */
+    bubbleTimeline: async (params?: BubbleTimelineParams) =>
+      this.#paginatedGet<Status>('/api/v1/timelines/bubble', { params }, statusSchema),
   };
 
   public readonly lists = {

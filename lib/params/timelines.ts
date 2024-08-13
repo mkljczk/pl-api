@@ -50,6 +50,7 @@ interface SaveMarkersParams {
 }
 
 type GroupTimelineParams = PaginationParams & WithMutedParam & OnlyMediaParam;
+type BubbleTimelineParams = PaginationParams & WithMutedParam & OnlyEventsParam & OnlyMediaParam;
 
 export type {
   PublicTimelineParams,
@@ -60,4 +61,5 @@ export type {
   GetConversationsParams,
   SaveMarkersParams,
   GroupTimelineParams,
+  BubbleTimelineParams,
 };
