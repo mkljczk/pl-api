@@ -5,6 +5,12 @@ interface PublicTimelineParams extends PaginationParams, WithMutedParam, OnlyEve
   local?: boolean;
   /** Boolean. Show only remote statuses? Defaults to false. */
   remote?: boolean;
+  /**
+   * Boolean. Show only statuses from the given domain.
+   *
+   * Requires `features.instanceTimeline`.
+   */
+  instance?: string;
 }
 
 interface HashtagTimelineParams extends PaginationParams, WithMutedParam, OnlyEventsParam, OnlyMediaParam {

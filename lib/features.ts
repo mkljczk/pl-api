@@ -583,6 +583,12 @@ const getFeatures = (instance?: Instance) => {
     importData: v.software === PLEROMA,
 
     /**
+     * View posts from specific instance.
+     * @see GET /api/v1/timelines/public
+     */
+    instanceTimeline: v.software === PLEROMA,
+
+    /**
      * Mastodon server information API v2.
      * @see GET /api/v2/instance
      * @see {@link https://docs.joinmastodon.org/methods/instance/#v2}
