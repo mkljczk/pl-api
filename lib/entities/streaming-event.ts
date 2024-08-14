@@ -7,6 +7,22 @@ import { conversationSchema } from './conversation';
 import { notificationSchema } from './notification';
 import { statusSchema } from './status';
 
+const followRelationshipUpdateSchema = z.object({
+  state: z.enum(['follow_pending', 'follow_accept', 'follow_reject']),
+  follower: z.object({
+    id: z.string(),
+    follower_count: z.number().nullable().catch(null),
+    following_count: z.number().nullable().catch(null),
+  }),
+  following: z.object({
+    id: z.string(),
+    follower_count: z.number().nullable().catch(null),
+    following_count: z.number().nullable().catch(null),
+  }),
+});
+
+type FollowRelationshipUpdate = z.infer<typeof followRelationshipUpdateSchema>;
+
 const baseStreamingEventSchema = z.object({
   stream: z.array(z.string()).catch([]),
 });
@@ -52,19 +68,7 @@ const chatUpdateStreamingEventSchema = baseStreamingEventSchema.extend({
 
 const followRelationshipsUpdateStreamingEventSchema = baseStreamingEventSchema.extend({
   event: z.literal('follow_relationships_update'),
-  payload: z.preprocess((payload: any) => JSON.parse(payload), z.object({
-    state: z.enum(['follow_pending', 'follow_accept', 'follow_reject']),
-    follower: z.object({
-      id: z.string(),
-      follower_count: z.number().nullable().catch(null),
-      following_count: z.number().nullable().catch(null),
-    }),
-    following: z.object({
-      id: z.string(),
-      follower_count: z.number().nullable().catch(null),
-      following_count: z.number().nullable().catch(null),
-    }),
-  })),
+  payload: z.preprocess((payload: any) => JSON.parse(payload), followRelationshipUpdateSchema),
 });
 
 const respondStreamingEventSchema = baseStreamingEventSchema.extend({
@@ -105,4 +109,9 @@ type StreamingEvent = z.infer<
 | typeof respondStreamingEventSchema
 >;
 
-export { streamingEventSchema, type StreamingEvent };
+export {
+  followRelationshipUpdateSchema,
+  streamingEventSchema,
+  type FollowRelationshipUpdate,
+  type StreamingEvent,
+};

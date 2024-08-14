@@ -82,6 +82,7 @@ import type {
   Notification,
   ScheduledStatus,
   Status,
+  StreamingEvent,
   Tag,
 } from './entities';
 import type {
@@ -288,6 +289,8 @@ class PlApiClient {
      */
     revokeToken: async (params: RevokeTokenParams) => {
       const response = await this.request('/oauth/revoke', { method: 'POST', body: params });
+
+      this.#socket?.close();
 
       return response.json as {};
     },
@@ -2129,13 +2132,17 @@ class PlApiClient {
      * Open a multiplexed WebSocket connection to receive events.
      * @see {@link https://docs.joinmastodon.org/methods/streaming/#websocket}
      */
-    connect: async () => {
+    connect: () => {
       if (this.#socket) return this.#socket;
 
       const path = buildFullPath('/api/v1/streaming', this.#instance?.configuration.urls.streaming, { access_token: this.accessToken });
+
       const ws = new WebSocket(path, this.accessToken as any);
 
-      let listeners: Array<{ listener: any; stream?: string }> = [];
+      let listeners: Array<{ listener: (event: StreamingEvent) => any; stream?: string }> = [];
+      const queue: Array<() => any> = [];
+
+      const enqueue = (fn: () => any) => ws.readyState === WebSocket.CONNECTING ? queue.push(fn) : fn();
 
       ws.onmessage = (event) => {
         const message = streamingEventSchema.parse(JSON.parse(event.data as string));
@@ -2143,13 +2150,17 @@ class PlApiClient {
         listeners.filter(({ listener, stream }) => (!stream || message.stream.includes(stream)) && listener(message));
       };
 
+      ws.onopen = () => {
+        queue.forEach(fn => fn());
+      };
+
       this.#socket = {
-        listen: (listener: any, stream?: string) => listeners.push({ listener, stream }),
-        unlisten: (listener: any) => listeners = listeners.filter((value) => value.listener !== listener),
+        listen: (listener: (event: StreamingEvent) => any, stream?: string) => listeners.push({ listener, stream }),
+        unlisten: (listener: (event: StreamingEvent) => any) => listeners = listeners.filter((value) => value.listener !== listener),
         subscribe: (stream: string, { list, tag }: { list?: string; tag?: string } = {}) =>
-          ws.send(JSON.stringify({ type: 'subscribe', stream, list, tag })),
+          enqueue(() => ws.send(JSON.stringify({ type: 'subscribe', stream, list, tag }))),
         unsubscribe: (stream: string, { list, tag }: { list?: string; tag?: string } = {}) =>
-          ws.send(JSON.stringify({ type: 'unsubscribe', stream, list, tag })),
+          enqueue(() => ws.send(JSON.stringify({ type: 'unsubscribe', stream, list, tag }))),
         close: () => {
           ws.close();
           this.#socket = undefined;
