@@ -540,9 +540,30 @@ class PlApiClient {
 
     /**
      * Returns favorites timeline of any user
+     *
+     * Requires features{@link Features['publicFavourites']}.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromaaccountsidfavourites}
      */
     getAccountFavourites: async (accountId: string, params?: GetAccountFavouritesParams) =>
       this.#paginatedGet<Status>(`/api/v1/pleroma/accounts/${accountId}/favourites`, { params }, statusSchema),
+
+    /**
+     * Interact with profile or status from remote account¶
+     *
+     * Requires features{@link Features['remoteInteractions']}.
+     * @param ap_id - Profile or status ActivityPub ID
+     * @param profile - Remote profile webfinger
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromaremote_interaction}
+     */
+    remoteInteraction: async (ap_id: string, profile: string) => {
+      const response = await this.request('/api/v1/pleroma/remote_interaction', { method: 'POST', body: { ap_id, profile } });
+
+      if (response.json?.error) throw response.json.error;
+
+      return z.object({
+        url: z.string(),
+      }).parse(response.json);
+    },
   };
 
   public readonly myAccount = {

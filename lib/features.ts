@@ -807,6 +807,12 @@ const getFeatures = (instance?: Instance) => {
     ]),
 
     /**
+     * Returns favorites timeline of any user
+     * @see GET /api/v1/pleroma/accounts/:id/favourites
+     */
+    publicFavourites: v.software === PLEROMA,
+
+    /**
      * Can display a timeline of all known public statuses.
      * Local and Fediverse timelines both use this feature.
      * @see GET /api/v1/timelines/public
