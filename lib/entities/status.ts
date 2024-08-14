@@ -14,6 +14,7 @@ import { dateSchema, filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
 import { translationSchema } from './translation';
+import { groupSchema } from './group';
 
 const statusEventSchema = z.object({
   name: z.string().catch(''),
@@ -70,6 +71,8 @@ const baseStatusSchema = z.object({
   bookmarked: z.coerce.boolean(),
   pinned: z.coerce.boolean(),
   filtered: filteredArray(filterResultSchema),
+  approval_status: z.enum(['pending', 'approval', 'rejected']).nullable().catch(null),
+  group: groupSchema.nullable().catch(null),
 
   local: z.boolean().optional().catch(undefined),
   conversation_id: z.string().optional().catch(undefined),
