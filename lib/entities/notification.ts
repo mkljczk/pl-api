@@ -1,3 +1,4 @@
+import pick from 'lodash/pick';
 import { z } from 'zod';
 
 import { accountSchema } from './account';
@@ -13,6 +14,9 @@ const baseNotificationSchema = z.object({
   created_at: dateSchema,
   id: z.string(),
   type: z.string(),
+
+  is_muted: z.boolean().optional().catch(undefined),
+  is_seen: z.boolean().optional().catch(undefined),
 });
 
 const accountNotificationSchema = baseNotificationSchema.extend({
@@ -64,6 +68,7 @@ const eventParticipationRequestNotificationSchema = baseNotificationSchema.exten
 
 /** @see {@link https://docs.joinmastodon.org/entities/Notification/} */
 const notificationSchema: z.ZodType<Notification> = z.preprocess((notification: any) => ({
+  ...pick(notification.pleroma || {}, ['is_muted', 'is_seen']),
   ...notification,
   type: notification.type === 'pleroma:report'
     ? 'admin.report'

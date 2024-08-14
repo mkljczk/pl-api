@@ -176,6 +176,7 @@ import type {
   UpdateListParams,
   UpdateMediaParams,
   UpdateNotificationPolicyRequest,
+  UpdateNotificationSettingsParams,
   UpdatePushNotificationsSubscriptionParams,
   UploadMediaParams,
 } from './params';
@@ -293,6 +294,18 @@ class PlApiClient {
       this.#socket?.close();
 
       return response.json as {};
+    },
+
+    /**
+     * Get a new captcha
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromacaptcha}
+    */
+    getCaptcha: async () => {
+      const response = await this.request('/api/pleroma/captchaa');
+
+      return z.intersection(z.object({
+        type: z.string(),
+      }), z.record(z.any())).parse(response.json);
     },
   };
 
@@ -1177,6 +1190,20 @@ class PlApiClient {
       });
 
       return z.string().parse(response.json);
+    },
+
+    /**
+     * Updates user notification settings
+     *
+     * Requires features{@link Features['muteStrangers']}.
+     * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromanotification_settings}
+     */
+    updateNotificationSettings: async (params: UpdateNotificationSettingsParams) => {
+      const response = await this.request('/api/pleroma/notification_settings', { method: 'PUT', body: params });
+
+      if (response.json?.error) throw response.json.error;
+
+      return z.object({ status: z.string() }).parse(response.json);
     },
   };
 
@@ -2485,6 +2512,17 @@ class PlApiClient {
       const response = await this.request('/api/v1/custom_emojis');
 
       return filteredArray(customEmojiSchema).parse(response.json);
+    },
+
+    /**
+     * Dump frontend configurations
+     *
+     * Requires features{@link Features['frontendConfigurations']}.
+     */
+    getFrontendConfigurations: async () => {
+      const response = await this.request('/api/pleroma/frontend_configurations');
+
+      return z.record(z.record(z.any())).catch({}).parse(response);
     },
   };
 

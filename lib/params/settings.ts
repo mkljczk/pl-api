@@ -115,7 +115,20 @@ interface UpdateCredentialsParams {
   enable_rss?: boolean;
 }
 
+interface UpdateNotificationSettingsParams {
+  /**
+   * blocks notifications from accounts you do not follow
+   */
+  block_from_strangers?: boolean;
+
+  /**
+   * When set to true, it removes the contents of a message from the push notification.
+   */
+  hide_notification_contents?: boolean;
+}
+
 export type {
   CreateAccountParams,
   UpdateCredentialsParams,
+  UpdateNotificationSettingsParams,
 };
