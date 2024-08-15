@@ -160,6 +160,7 @@ import type {
   HashtagTimelineParams,
   HomeTimelineParams,
   ListTimelineParams,
+  MfaChallengeParams,
   MuteAccountParams,
   OauthAuthorizeParams,
   ProfileDirectoryParams,
@@ -301,11 +302,17 @@ class PlApiClient {
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apiv1pleromacaptcha}
     */
     getCaptcha: async () => {
-      const response = await this.request('/api/pleroma/captchaa');
+      const response = await this.request('/api/pleroma/captcha');
 
       return z.intersection(z.object({
         type: z.string(),
       }), z.record(z.any())).parse(response.json);
+    },
+
+    mfaChallenge: async (params: MfaChallengeParams) => {
+      const response = await this.request('/oauth/mfa/challenge', { method: 'POST', body: params });
+
+      return tokenSchema.parse(response.json);
     },
   };
 

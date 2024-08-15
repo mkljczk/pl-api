@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { Resolve } from '../utils/types';
+import { filteredArray } from './utils';
 
 /** @see {@link https://docs.joinmastodon.org/entities/FilterKeyword/} */
 const filterKeywordSchema = z.object({
@@ -15,13 +16,14 @@ const filterStatusSchema = z.object({
   status_id: z.string(),
 });
 
-/** @see {@link https://docs.joinmastodon.org/entities/FilterResult/} */
+/** @see {@link https://docs.joinmastodon.org/entities/Filter/} */
 const filterSchema = z.preprocess((filter: any) => {
   if (filter.phrase) {
     return {
       ...filter,
       title: filter.phrase,
       keywords: [{
+        id: '1',
         keyword: filter.phrase,
         whole_word: filter.whole_word,
       }],
@@ -35,8 +37,8 @@ const filterSchema = z.preprocess((filter: any) => {
   context: z.array(z.enum(['home', 'notifications', 'public', 'thread', 'account'])),
   expires_at: z.string().datetime({ offset: true }).nullable().catch(null),
   filter_action: z.enum(['warn', 'hide']).catch('warn'),
-  keywords: z.array(filterKeywordSchema).nullable().catch(null),
-  statuses: z.array(filterStatusSchema).nullable().catch(null),
+  keywords: filteredArray(filterKeywordSchema),
+  statuses: filteredArray(filterStatusSchema),
 }));
 
 type Filter = Resolve<z.infer<typeof filterSchema>>;

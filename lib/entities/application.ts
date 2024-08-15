@@ -9,8 +9,13 @@ const applicationSchema = z.object({
   client_id: z.string().optional().catch(undefined),
   client_secret: z.string().optional().catch(undefined),
   redirect_uri: z.string().optional().catch(undefined),
+
+  id: z.string().optional().catch(undefined),
+
+  /** @deprecated */
+  vapid_key: z.string().optional().catch(undefined),
 });
 
-type ApplicationReaction = Resolve<z.infer<typeof applicationSchema>>;
+type Application = Resolve<z.infer<typeof applicationSchema>>;
 
-export { applicationSchema, type ApplicationReaction };
+export { applicationSchema, type Application };

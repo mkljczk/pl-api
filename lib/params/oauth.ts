@@ -37,8 +37,18 @@ interface RevokeTokenParams {
   token: string;
 }
 
+interface MfaChallengeParams {
+  client_id: string;
+  client_secret: string;
+  /** access token to check second step of mfa */
+  mfa_token: string;
+  challenge_type: 'totp' | 'recovery';
+  code: string;
+}
+
 export type {
   OauthAuthorizeParams,
   GetTokenParams,
   RevokeTokenParams,
+  MfaChallengeParams,
 };

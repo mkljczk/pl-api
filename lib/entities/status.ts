@@ -5,16 +5,16 @@ import { accountSchema } from './account';
 import { customEmojiSchema } from './custom-emoji';
 import { emojiReactionSchema } from './emoji-reaction';
 import { filterResultSchema } from './filter-result';
+import { groupSchema } from './group';
 import { mediaAttachmentSchema } from './media-attachment';
 import { mentionSchema } from './mention';
 import { pollSchema } from './poll';
 import { previewCardSchema } from './preview-card';
 import { tagSchema } from './tag';
+import { translationSchema } from './translation';
 import { dateSchema, filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
-import { translationSchema } from './translation';
-import { groupSchema } from './group';
 
 const statusEventSchema = z.object({
   name: z.string().catch(''),
