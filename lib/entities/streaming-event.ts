@@ -81,8 +81,8 @@ const respondStreamingEventSchema = baseStreamingEventSchema.extend({
 
 /** @see {@link https://docs.joinmastodon.org/methods/streaming/#events} */
 const streamingEventSchema: z.ZodType<StreamingEvent> = z.preprocess((event: any) => ({
-  event: event.event?.replace(/^pleroma:/, ''),
   ...event,
+  event: event.event?.replace(/^pleroma:/, ''),
 }), z.discriminatedUnion('event', [
   statusStreamingEventSchema,
   stringStreamingEventSchema,
