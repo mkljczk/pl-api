@@ -12,6 +12,9 @@ const statusSourceSchema = z.object({
 
   content_type: z.string().catch('text/plain'),
   location: locationSchema,
+
+  text_map: z.record(z.string()).nullable().catch(null),
+  spoiler_text_map: z.record(z.string()).nullable().catch(null),
 });
 
 type StatusSource = Resolve<z.infer<typeof statusSourceSchema>>;

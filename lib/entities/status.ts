@@ -92,6 +92,10 @@ const baseStatusSchema = z.object({
   event: statusEventSchema.nullable().catch(null),
   translation: translationSchema.nullable().or(z.literal(false)).catch(null),
 
+  content_map: z.record(z.string()).nullable().catch(null),
+  text_map: z.record(z.string()).nullable().catch(null),
+  spoiler_text_map: z.record(z.string()).nullable().catch(null),
+
   dislikes_count: z.number().catch(0),
   disliked: z.coerce.boolean().catch(false),
 });

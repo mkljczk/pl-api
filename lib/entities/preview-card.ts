@@ -10,6 +10,7 @@ const previewCardSchema = z.object({
   height: z.number().catch(0),
   html: z.string().catch(''),
   image: z.string().nullable().catch(null),
+  image_description: z.string().catch(''),
   provider_name: z.string().catch(''),
   provider_url: z.string().url().catch(''),
   title: z.string().catch(''),
