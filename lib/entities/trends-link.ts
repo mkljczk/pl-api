@@ -4,9 +4,7 @@ import { blurhashSchema } from './media-attachment';
 import { historySchema } from './tag';
 
 /** @see {@link https://docs.joinmastodon.org/entities/PreviewCard/#trends-link} */
-const trendsLinkSchema = z.preprocess((link: any) => {
-  return { ...link, id: link.url };
-}, z.object({
+const trendsLinkSchema = z.preprocess((link: any) => ({ ...link, id: link.url }), z.object({
   id: z.string().catch(''),
   url: z.string().url().catch(''),
   title: z.string().catch(''),

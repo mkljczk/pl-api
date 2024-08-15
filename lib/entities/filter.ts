@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { Resolve } from '../utils/types';
+
 import { filteredArray } from './utils';
 
 /** @see {@link https://docs.joinmastodon.org/entities/FilterKeyword/} */

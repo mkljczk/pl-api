@@ -4,7 +4,7 @@ import z from 'zod';
 import { customEmojiSchema } from './custom-emoji';
 import { relationshipSchema } from './relationship';
 import { roleSchema } from './role';
-import { dateSchema, filteredArray } from './utils';
+import { coerceObject, dateSchema, filteredArray } from './utils';
 
 const filterBadges = (tags?: string[]) =>
   tags?.filter(tag => tag.startsWith('badge:')).map(tag => roleSchema.parse({ id: tag, name: tag.replace(/^badge:/, '') }));
@@ -49,6 +49,7 @@ const preprocessAccount = (account: any) => ({
     'location',
   ])),
   ...(pick(account.other_settings || {}), ['birthday', 'location']),
+  __meta: pick(account, ['pleroma', 'source']),
   ...account,
 });
 
@@ -91,7 +92,8 @@ const baseAccountSchema = z.object({
   relationship: relationshipSchema.optional().catch(undefined),
   is_moderator: z.boolean().optional().catch(undefined),
   is_admin: z.boolean().optional().catch(undefined),
-  hide_favorites: z.boolean().optional().catch(true),
+  is_suggested: z.boolean().optional().catch(undefined),
+  hide_favorites: z.boolean().catch(true),
   hide_followers: z.boolean().optional().catch(undefined),
   hide_follows: z.boolean().optional().catch(undefined),
   hide_followers_count: z.boolean().optional().catch(undefined),
@@ -109,6 +111,11 @@ const baseAccountSchema = z.object({
   header_description: z.string().catch(''),
 
   verified: z.boolean().optional().catch(undefined),
+
+  __meta: coerceObject({
+    pleroma: z.any().optional().catch(undefined),
+    source: z.any().optional().catch(undefined),
+  }),
 });
 
 const accountWithMovedAccountSchema = baseAccountSchema.extend({
@@ -120,7 +127,7 @@ const accountSchema = z.preprocess(preprocessAccount, accountWithMovedAccountSch
 
 type Account = z.infer<typeof accountSchema>;
 
-const credentialAccountSchema = accountWithMovedAccountSchema.extend({
+const credentialAccountSchema = z.preprocess(preprocessAccount, accountWithMovedAccountSchema.extend({
   source: z.object({
     note: z.string().catch(''),
     fields: filteredArray(fieldSchema),
@@ -146,13 +153,13 @@ const credentialAccountSchema = accountWithMovedAccountSchema.extend({
     block_from_strangers: z.boolean().catch(false),
     hide_notification_contents: z.boolean().catch(false),
   }).optional().catch(undefined),
-});
+}));
 
 type CredentialAccount = z.infer<typeof credentialAccountSchema>;
 
-const mutedAccountSchema = accountWithMovedAccountSchema.extend({
+const mutedAccountSchema = z.preprocess(preprocessAccount, accountWithMovedAccountSchema.extend({
   mute_expires_at: dateSchema.nullable().catch(null),
-});
+}));
 
 type MutedAccount = z.infer<typeof mutedAccountSchema>;
 

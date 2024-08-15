@@ -6,6 +6,8 @@ import { filteredArray } from './utils';
 const pollOptionSchema = z.object({
   title: z.string().catch(''),
   votes_count: z.number().catch(0),
+
+  title_map: z.record(z.string()).nullable().catch(null),
 });
 
 /** @see {@link https://docs.joinmastodon.org/entities/Poll/} */

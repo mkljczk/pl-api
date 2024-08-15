@@ -7,7 +7,7 @@ const tokenSchema = z.object({
   scope: z.string(),
   created_at: z.number().optional().catch(undefined),
 
-  id: z.coerce.string().optional().catch(undefined),
+  id: z.number().optional().catch(undefined),
   refresh_token: z.string().optional().catch(undefined),
   expires_in: z.number().optional().catch(undefined),
   me: z.string().optional().catch(undefined),
