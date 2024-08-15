@@ -1,4 +1,4 @@
-import pick from 'lodash/pick';
+import pick from 'lodash.pick';
 import { z } from 'zod';
 
 import { accountSchema } from './account';
