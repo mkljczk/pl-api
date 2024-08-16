@@ -23,10 +23,10 @@ const scheduledStatusSchema = z.object({
     visibility: z.string().catch('public'),
     in_reply_to_id: z.string().nullable().catch(null),
     language: z.string().nullable().catch(null),
-    application_id: z.number().int(),
-    scheduled_at: z.null().catch(null),
+    application_id: z.number().int().nullable().catch(null),
+    scheduled_at: z.string().datetime({ offset: true }).nullable().catch(null),
     idempotency: z.string().nullable().catch(null),
-    with_rate_limit: z.boolean(),
+    with_rate_limit: z.boolean().catch(false),
 
     expires_in: z.number().nullable().catch(null),
   }),
