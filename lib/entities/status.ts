@@ -73,6 +73,7 @@ const baseStatusSchema = z.object({
   filtered: filteredArray(filterResultSchema),
   approval_status: z.enum(['pending', 'approval', 'rejected']).nullable().catch(null),
   group: groupSchema.nullable().catch(null),
+  scheduled_at: z.null().catch(null),
 
   local: z.boolean().optional().catch(undefined),
   conversation_id: z.string().optional().catch(undefined),

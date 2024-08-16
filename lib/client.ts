@@ -1572,6 +1572,7 @@ class PlApiClient {
         body: params,
       });
 
+      if (response.json?.scheduled_at) return scheduledStatusSchema.parse(response.json);
       return statusSchema.parse(response.json);
     },
 
