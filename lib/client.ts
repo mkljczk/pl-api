@@ -39,6 +39,7 @@ import {
   locationSchema,
   markersSchema,
   mediaAttachmentSchema,
+  mutedAccountSchema,
   notificationPolicySchema,
   notificationRequestSchema,
   notificationSchema,
@@ -1286,7 +1287,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/mutes/#get}
      */
     getMutes: async (params?: GetMutesParams) =>
-      this.#paginatedGet<Account>('/api/v1/mutes', { params }, accountSchema),
+      this.#paginatedGet<Account>('/api/v1/mutes', { params }, mutedAccountSchema),
 
     /**
      * View blocked users
