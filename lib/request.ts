@@ -70,7 +70,7 @@ function request<T = any>(this: PlApiClient, input: URL | RequestInfo, {
         const data = xhr.response;
         let json: T = undefined!;
 
-        if (contentType === 'application/json') {
+        if (xhr.getResponseHeader('content-type')?.includes('application/json')) {
           try {
             json = JSON.parse(data);
           } catch (e) {
@@ -106,7 +106,7 @@ function request<T = any>(this: PlApiClient, input: URL | RequestInfo, {
 
     let json: T = undefined!;
 
-    if (contentType === 'application/json') {
+    if (res.headers.get('content-type')?.includes('application/json')) {
       try {
         json = JSON.parse(data);
       } catch (e) {

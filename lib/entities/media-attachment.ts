@@ -98,13 +98,7 @@ const mediaAttachmentSchema = z.preprocess((data: any) => ({
   gifvAttachmentSchema,
   audioAttachmentSchema,
   unknownAttachmentSchema,
-]).transform((attachment) => {
-  if (!attachment.preview_url) {
-    attachment.preview_url = attachment.url;
-  }
-
-  return attachment;
-}));
+]));
 
 type MediaAttachment = z.infer<typeof mediaAttachmentSchema>;
 
