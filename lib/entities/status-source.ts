@@ -11,7 +11,7 @@ const statusSourceSchema = z.object({
   spoiler_text: z.string().catch(''),
 
   content_type: z.string().catch('text/plain'),
-  location: locationSchema,
+  location: locationSchema.nullable().catch(null),
 
   text_map: z.record(z.string()).nullable().catch(null),
   spoiler_text_map: z.record(z.string()).nullable().catch(null),
