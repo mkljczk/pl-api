@@ -87,7 +87,6 @@ const baseStatusSchema = z.object({
   quote_visible: z.boolean().optional().catch(undefined),
   quote_url: z.string().optional().catch(undefined),
   quotes_count: z.number().catch(0),
-  quote_id: z.string().nullable().catch(null),
   bookmark_folder: z.string().nullable().catch(null),
 
   event: statusEventSchema.nullable().catch(null),

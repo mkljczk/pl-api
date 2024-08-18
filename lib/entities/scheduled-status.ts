@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 import { mediaAttachmentSchema } from './media-attachment';
-import { dateSchema, filteredArray } from './utils';
+import { filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
 
 /** @see {@link https://docs.joinmastodon.org/entities/ScheduledStatus/} */
 const scheduledStatusSchema = z.object({
   id: z.string(),
-  scheduled_at: dateSchema,
+  scheduled_at: z.string().datetime({ offset: true }),
   params: z.object({
     text: z.string().nullable().catch(null),
     poll: z.object({
