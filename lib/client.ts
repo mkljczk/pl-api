@@ -502,8 +502,8 @@ class PlApiClient {
      * Quickly lookup a username to see if it is available, skipping WebFinger resolution.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#lookup}
      */
-    lookupAccount: async (acct: string) => {
-      const response = await this.request('/api/v1/accounts/lookup', { params: { acct } });
+    lookupAccount: async (acct: string, meta?: RequestMeta) => {
+      const response = await this.request('/api/v1/accounts/lookup', { ...meta, params: { acct } });
 
       return accountSchema.parse(response.json);
     },
