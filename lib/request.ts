@@ -58,7 +58,7 @@ function request<T = any>(this: PlApiClient, input: URL | RequestInfo, {
   if (contentType !== '') headers.set('Content-Type', contentType);
   if (idempotencyKey) headers.set('Idempotency-Key', contentType);
 
-  body = contentType === '' ? serialize(body, { indices: true }) : JSON.stringify(body);
+  body = body && contentType === '' ? serialize(body, { indices: true }) : JSON.stringify(body);
 
   // Fetch API doesn't report upload progress, use XHR
   if (onUploadProgress) {

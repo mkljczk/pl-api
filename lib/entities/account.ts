@@ -80,7 +80,7 @@ const baseAccountSchema = z.object({
   suspended: z.boolean().optional().catch(undefined),
   limited: z.boolean().optional().catch(undefined),
   created_at: z.string().datetime().catch(new Date().toUTCString()),
-  last_status_at: z.string().datetime().nullable().catch(null),
+  last_status_at: z.string().date().nullable().catch(null),
   statuses_count: z.number().catch(0),
   followers_count: z.number().catch(0),
   following_count: z.number().catch(0),
