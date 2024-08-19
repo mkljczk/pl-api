@@ -2503,6 +2503,8 @@ class PlApiClient {
 
       if (!response.ok) response = await this.request('/api/v1/instance');
 
+      if (!response.ok) throw response;
+
       const instance = instanceSchema.readonly().parse(response.json);
       this.#setInstance(instance);
 
