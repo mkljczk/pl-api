@@ -25,10 +25,10 @@ const getLinks = (response: Pick<Response, 'headers'>): LinkHeader =>
   new LinkHeader(response.headers?.get('link') || undefined);
 
 const getNextLink = (response: Pick<Response, 'headers'>): string | null =>
-  getLinks(response).refs.find(link => link.rel === 'next')?.uri || null;
+  getLinks(response).refs.find(link => link.rel.toLocaleLowerCase() === 'next')?.uri || null;
 
 const getPrevLink = (response: Pick<Response, 'headers'>): string | null =>
-  getLinks(response).refs.find(link => link.rel === 'prev')?.uri || null;
+  getLinks(response).refs.find(link => link.rel.toLocaleLowerCase() === 'prev')?.uri || null;
 
 interface RequestBody {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
