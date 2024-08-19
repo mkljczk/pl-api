@@ -558,7 +558,7 @@ class PlApiClient {
       this.#paginatedGet<Status>(`/api/v1/pleroma/accounts/${accountId}/favourites`, { params }, statusSchema),
 
     /**
-     * Interact with profile or status from remote account¶
+     * Interact with profile or status from remote account
      *
      * Requires features{@link Features['remoteInteractions']}.
      * @param ap_id - Profile or status ActivityPub ID
@@ -573,6 +573,18 @@ class PlApiClient {
       return z.object({
         url: z.string(),
       }).parse(response.json);
+    },
+
+    /**
+     * Bite the given user.
+     *
+     * Requires features{@link Features['bites']}.
+     * @see {@link https://github.com/purifetchi/Toki/blob/master/Toki/Controllers/MastodonApi/Bite/BiteController.cs}
+     */
+    biteAccount: async (id: string) => {
+      const response = await this.request('/api/v1/bite', { method: 'POST', params: { id } });
+
+      return response.json as {};
     },
   };
 

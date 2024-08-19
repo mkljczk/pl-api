@@ -20,7 +20,7 @@ const baseNotificationSchema = z.object({
 });
 
 const accountNotificationSchema = baseNotificationSchema.extend({
-  type: z.enum(['follow', 'follow_request', 'admin.sign_up']),
+  type: z.enum(['follow', 'follow_request', 'admin.sign_up', 'bite']),
 });
 
 const statusNotificationSchema = baseNotificationSchema.extend({

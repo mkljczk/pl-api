@@ -233,6 +233,12 @@ const getFeatures = (instance?: Instance) => {
      */
     birthdays: v.software === PLEROMA,
 
+    /**
+     * Allow to bite users.
+     * see POST /api/v1/bite
+     */
+    bites: v.software === TOKI,
+
     /** Whether people who blocked you are visible through the API. */
     blockersVisible: features.includes('blockers_visible'),
 
