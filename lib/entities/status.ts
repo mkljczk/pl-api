@@ -15,6 +15,7 @@ import { translationSchema } from './translation';
 import { dateSchema, filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
+import { interactionPolicySchema } from './interaction-policy';
 
 const statusEventSchema = z.object({
   name: z.string().catch(''),
@@ -98,6 +99,8 @@ const baseStatusSchema = z.object({
 
   dislikes_count: z.number().catch(0),
   disliked: z.coerce.boolean().catch(false),
+
+  interaction_policy: interactionPolicySchema,
 });
 
 const statusSchema = z.preprocess((status: any) => {

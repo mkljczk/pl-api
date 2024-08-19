@@ -35,6 +35,7 @@ import {
   groupRelationshipSchema,
   groupSchema,
   instanceSchema,
+  interactionPoliciesSchema,
   listSchema,
   locationSchema,
   markersSchema,
@@ -175,6 +176,7 @@ import type {
   UpdateCredentialsParams,
   UpdateFilterParams,
   UpdateGroupParams,
+  UpdateInteractionPoliciesParams,
   UpdateListParams,
   UpdateMediaParams,
   UpdateNotificationPolicyRequest,
@@ -1259,6 +1261,30 @@ class PlApiClient {
       if (response.json?.error) throw response.json.error;
 
       return z.object({ status: z.string() }).parse(response.json);
+    },
+
+    /**
+     * Get default interaction policies for new statuses created by you.
+     *
+     * Requires features{@link Features['interactionPolicies']}.
+     * @see {@link https://docs.gotosocial.org/en/latest/api/swagger/}
+     */
+    getInteractionPolicies: async () => {
+      const response = await this.request('/api/v1/interaction_policies/defaults');
+
+      return interactionPoliciesSchema.parse(response.json);
+    },
+
+    /**
+     * Update default interaction policies per visibility level for new statuses created by you.
+     *
+     * Requires features{@link Features['interactionPolicies']}.
+     * @see {@link https://docs.gotosocial.org/en/latest/api/swagger/}
+     */
+    updateInteractionPolicies: async (params: UpdateInteractionPoliciesParams) => {
+      const response = await this.request('/api/v1/interaction_policies/defaults', { method: 'PATCH', body: params });
+
+      return interactionPoliciesSchema.parse(response.json);
     },
   };
 

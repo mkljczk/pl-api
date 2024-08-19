@@ -299,6 +299,7 @@ const getFeatures = (instance?: Instance) => {
      */
     conversations: any([
       v.software === FIREFISH,
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
       v.software === ICESHRIMP,
       v.software === FRIENDICA,
       v.software === MASTODON,
@@ -510,6 +511,7 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v1/tags/:name/unfollow
      */
     followHashtags: any([
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
       v.software === MASTODON && gte(v.compatVersion, '4.0.0'),
       v.software === PLEROMA && v.build === AKKOMA,
       v.software === TAKAHE && gte(v.version, '0.9.0'),
@@ -628,6 +630,8 @@ const getFeatures = (instance?: Instance) => {
       v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.6.0'),
       v.software === PLEROMA && gte(v.version, '2.7.0'),
     ]),
+
+    interactionPolicies: v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
 
     /**
      * TODO: Replace with proper feature gate.

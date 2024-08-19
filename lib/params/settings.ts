@@ -127,8 +127,20 @@ interface UpdateNotificationSettingsParams {
   hide_notification_contents?: boolean;
 }
 
+type UpdateInteractionPoliciesParams = Record<
+  'public' | 'unlisted' | 'private' | 'direct',
+  Record<
+    'can_favourite' | 'can_reblog' | 'can_reply',
+    Record<
+      'always' | 'with_approval',
+      'public' | 'followers' | 'following' | 'mutuals' | 'mentioned' | 'author' | 'me' | string
+    >
+  >
+>;
+
 export type {
   CreateAccountParams,
   UpdateCredentialsParams,
   UpdateNotificationSettingsParams,
+  UpdateInteractionPoliciesParams,
 };
