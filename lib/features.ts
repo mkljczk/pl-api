@@ -108,7 +108,7 @@ const getFeatures = (instance?: Instance) => {
      * Ability to set description of profile avatar and header.
      * @see PATCH /api/v1/accounts/update_credentials
      */
-    accountAvatarDescription: v.software === GOTOSOCIAL,
+    accountAvatarDescription: v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
 
     /**
      * Pleroma backups.
@@ -455,10 +455,10 @@ const getFeatures = (instance?: Instance) => {
     exposableReactions: any([
       v.software === FIREFISH,
       v.software === FRIENDICA,
+      v.software === GOTOSOCIAL,
       v.software === ICESHRIMP,
       v.software === MASTODON,
       v.software === TAKAHE && gte(v.version, '0.6.1'),
-      v.software === GOTOSOCIAL,
       v.software === TOKI,
       features.includes('exposable_reactions'),
     ]),
@@ -482,8 +482,8 @@ const getFeatures = (instance?: Instance) => {
      * @see {@link https://docs.joinmastodon.org/methods/filters/#v1}
      */
     filters: any([
-      v.software === PLEROMA,
       v.software === GOTOSOCIAL,
+      v.software === PLEROMA,
     ]),
 
     /**
@@ -491,8 +491,8 @@ const getFeatures = (instance?: Instance) => {
      * @see {@link https://docs.joinmastodon.org/methods/filters/}
      */
     filtersV2: any([
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.0'),
       v.software === MASTODON,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -500,8 +500,8 @@ const getFeatures = (instance?: Instance) => {
      * @see {@link https://docs.joinmastodon.org/methods/media/}
      */
     focalPoint: any([
-      v.software === MASTODON,
       v.software === GOTOSOCIAL,
+      v.software === MASTODON,
     ]),
 
     /**
@@ -520,10 +520,10 @@ const getFeatures = (instance?: Instance) => {
      * @see PATCH /api/v1/accounts/update_credentials
      */
     followRequests: any([
-      v.software === MASTODON,
-      v.software === PLEROMA,
-      v.software === MITRA,
       v.software === GOTOSOCIAL,
+      v.software === MASTODON,
+      v.software === MITRA,
+      v.software === PLEROMA,
       v.software === TOKI,
     ]),
 
@@ -574,17 +574,42 @@ const getFeatures = (instance?: Instance) => {
      * @see PATCH /api/v1/accounts/update_credentials
      */
     hideNetwork: any([
+      v.software === GOTOSOCIAL && gte(v.version, '0.15.0'),
       v.software === PLEROMA,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
-     * Pleroma import endpoints.
-     * @see POST /api/pleroma/follow_import
+     * Import a .csv file with a list of blocked users.
      * @see POST /api/pleroma/blocks_import
+     * @see POST /api/v1/import
+     */
+    importBlocks: any([
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
+      v.software === PLEROMA,
+    ]),
+
+    /**
+     * Import a .csv file with a list of followed users.
+     * @see POST /api/pleroma/follow_import
+     * @see POST /api/v1/import
+
+     */
+    importFollows: any([
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
+      v.software === PLEROMA,
+    ]),
+
+    /**
+     * Import a .csv file with a list of muted users.
      * @see POST /api/pleroma/mutes_import
      */
-    importData: v.software === PLEROMA,
+    importMutes: v.software === PLEROMA,
+
+    /**
+     * Allow to specify mode of data import to either `merge` or `overwrite`.
+     * @see POST /api/v1/import
+     */
+    importOverwrite: v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
 
     /**
      * View posts from specific instance.
@@ -598,10 +623,10 @@ const getFeatures = (instance?: Instance) => {
      * @see {@link https://docs.joinmastodon.org/methods/instance/#v2}
     */
     instanceV2: any([
+      v.software === GOTOSOCIAL,
       v.software === MASTODON && gte(v.compatVersion, '4.0.0'),
       v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.6.0'),
       v.software === PLEROMA && gte(v.version, '2.7.0'),
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -623,10 +648,10 @@ const getFeatures = (instance?: Instance) => {
     lists: any([
       v.software === FIREFISH,
       v.software === FRIENDICA,
+      v.software === GOTOSOCIAL,
       v.software === ICESHRIMP,
       v.software === MASTODON,
       v.software === PLEROMA,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -671,10 +696,10 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v1/admin/accounts/:account_id/approve
      */
     mastodonAdmin: any([
+      v.software === GOTOSOCIAL,
       v.software === MASTODON,
       v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
       v.software === PLEROMA && v.build === PL,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -682,8 +707,8 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v2/media
      */
     mediaV2: any([
-      v.software === MASTODON,
       v.software === ICESHRIMP,
+      v.software === MASTODON,
       v.software === MITRA,
       v.software === PLEROMA,
       v.software === TAKAHE,
@@ -703,15 +728,34 @@ const getFeatures = (instance?: Instance) => {
     muteStrangers: v.software === PLEROMA,
 
     /**
+     * Ability to mute users.
+     * @see GET /api/v1/mutes
+     * @see POST /api/v1/accounts/:id/mute
+     * @see POST /api/v1/accounts/:id/unmute
+     */
+    mutes: any([
+      v.software === FIREFISH,
+      v.software === FRIENDICA,
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.0'),
+      v.software === ICESHRIMP,
+      v.software === MASTODON,
+      v.software === MITRA,
+      v.software === PIXELFED,
+      v.software === PLEROMA,
+      v.software === TAKAHE,
+    ]),
+
+    /**
      * Ability to specify how long the account mute should last.
      * @see PUT /api/v1/accounts/:id/mute
      */
     mutesDuration: any([
+      v.software === FIREFISH,
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.0'),
       v.software === ICESHRIMP,
-      v.software === PLEROMA,
       v.software === MASTODON,
+      v.software === PLEROMA,
       v.software === TAKAHE,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -908,7 +952,7 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v1/user/email_change
      */
     changeEmail: any([
-      v.software === GOTOSOCIAL,
+      v.software === GOTOSOCIAL && gte(v.version, '0.16.0'),
       v.software === PLEROMA,
     ]),
 

@@ -1176,39 +1176,65 @@ class PlApiClient {
     /**
      * Imports your follows, for example from a Mastodon CSV file.
      *
-     * Requires features{@link Features['importData']}.
+     * Requires features{@link Features['importFollows']}.
+     * `overwrite` mode requires features{@link Features['importOverwrite']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromafollow_import}
      */
-    importFollows: async (list: File | string) => {
-      const response = await this.request('/api/pleroma/follow_import', {
-        method: 'POST',
-        body: { list },
-        contentType: '',
-      });
+    importFollows: async (list: File | string, mode?: 'merge' | 'overwrite') => {
+      let response;
 
-      return z.string().parse(response.json);
+      switch (this.features.version.software) {
+        case GOTOSOCIAL:
+          response = await this.request('/api/v1/import', {
+            method: 'POST',
+            body: { data: list, type: 'following', mode },
+            contentType: '',
+          });
+          break;
+        default:
+          response = await this.request('/api/pleroma/follow_import', {
+            method: 'POST',
+            body: { list },
+            contentType: '',
+          });
+      }
+
+      return response.json;
     },
 
     /**
      * Imports your blocks.
      *
-     * Requires features{@link Features['importData']}.
+     * Requires features{@link Features['importBlocks']}.
+     * `overwrite` mode requires features{@link Features['importOverwrite']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromablocks_import}
      */
-    importBlocks: async (list: File | string) => {
-      const response = await this.request('/api/pleroma/blocks_import', {
-        method: 'POST',
-        body: { list },
-        contentType: '',
-      });
+    importBlocks: async (list: File | string, mode?: 'merge' | 'overwrite') => {
+      let response;
 
-      return z.string().parse(response.json);
+      switch (this.features.version.software) {
+        case GOTOSOCIAL:
+          response = await this.request('/api/v1/import', {
+            method: 'POST',
+            body: { data: list, type: 'blocks', mode },
+            contentType: '',
+          });
+          break;
+        default:
+          response = await this.request('/api/pleroma/blocks_import', {
+            method: 'POST',
+            body: { list },
+            contentType: '',
+          });
+      }
+
+      return response.json;
     },
 
     /**
      * Imports your mutes.
      *
-     * Requires features{@link Features['importData']}.
+     * Requires features{@link Features['importMutes']}.
      * @see {@link https://docs.pleroma.social/backend/development/API/pleroma_api/#apipleromamutes_import}
      */
     importMutes: async (list: File | string) => {
@@ -1218,7 +1244,7 @@ class PlApiClient {
         contentType: '',
       });
 
-      return z.string().parse(response.json);
+      return response.json;
     },
 
     /**
@@ -1262,6 +1288,8 @@ class PlApiClient {
     /**
      * Mute account
      * Mute the given account. Clients should filter statuses and notifications from this account, if received (e.g. due to a boost in the Home timeline).
+     *
+     * Requires features{@link Features['mutes']}.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#mute}
      */
     muteAccount: async (accountId: string, params?: MuteAccountParams) => {
@@ -1273,6 +1301,8 @@ class PlApiClient {
     /**
      * Unmute account
      * Unmute the given account.
+     *
+     * Requires features{@link Features['mutes']}.
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#unmute}
      */
     unmuteAccount: async (accountId: string) => {
@@ -1284,6 +1314,8 @@ class PlApiClient {
     /**
      * View muted accounts
      * Accounts the user has muted.
+     *
+     * Requires features{@link Features['mutes']}.
      * @see {@link https://docs.joinmastodon.org/methods/mutes/#get}
      */
     getMutes: async (params?: GetMutesParams) =>
