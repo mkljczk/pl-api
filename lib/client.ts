@@ -212,7 +212,7 @@ class PlApiClient {
     if (instance) {
       this.#setInstance(instance);
     }
-    if ((!instance && fetchInstance !== false) || fetchInstance) {
+    if (fetchInstance) {
       this.instance.getInstance();
     }
   }
@@ -2499,11 +2499,12 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/instance/#v2}
      */
     getInstance: async () => {
-      let response = await this.request('/api/v2/instance');
-
-      if (!response.ok) response = await this.request('/api/v1/instance');
-
-      if (!response.ok) throw response;
+      let response;
+      try {
+        response = await this.request('/api/v2/instance');
+      } catch (e) {
+        response = await this.request('/api/v1/instance');
+      }
 
       const instance = instanceSchema.readonly().parse(response.json);
       this.#setInstance(instance);
