@@ -1,5 +1,11 @@
 # `pl-api`
 
+This project should be considered unstable before the 1.0.0 release. I will not provide any changelog or information on breaking changes until then.
+
+## Projects using `pl-api`
+
+[`pl-fe`](https://github.com/mkljczk/pl-fe) is a web client for Mastodon-compatible servers forked from Soapbox. It uses `pl-api` for API interactions.
+
 ## License
 
 `pl-api` utilizes code from [Soapbox](https://gitlab.com/soapbox-pub/soapbox) and bases off official [Mastodon documentation](https://docs.joinmastodon.org).
