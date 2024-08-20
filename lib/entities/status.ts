@@ -6,6 +6,7 @@ import { customEmojiSchema } from './custom-emoji';
 import { emojiReactionSchema } from './emoji-reaction';
 import { filterResultSchema } from './filter-result';
 import { groupSchema } from './group';
+import { interactionPolicySchema } from './interaction-policy';
 import { mediaAttachmentSchema } from './media-attachment';
 import { mentionSchema } from './mention';
 import { pollSchema } from './poll';
@@ -15,7 +16,6 @@ import { translationSchema } from './translation';
 import { dateSchema, filteredArray } from './utils';
 
 import type { Resolve } from '../utils/types';
-import { interactionPolicySchema } from './interaction-policy';
 
 const statusEventSchema = z.object({
   name: z.string().catch(''),

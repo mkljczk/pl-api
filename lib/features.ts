@@ -205,6 +205,12 @@ const getFeatures = (instance?: Instance) => {
     ]),
 
     /**
+     * Ability to address a status to a list of users.
+     * @see POST /api/v1/statuses
+     */
+    addressableLists: v.software === PLEROMA && gte(v.version, '1.0.2'),
+
+    /**
      * Can display announcements set by admins.
      * @see GET /api/v1/announcements
      * @see POST /api/v1/announcements/:id/dismiss
