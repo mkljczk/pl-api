@@ -1032,6 +1032,12 @@ const getFeatures = (instance?: Instance) => {
     translations: features.includes('translation') || instance?.configuration.translation.enabled || false,
 
     /**
+     * Trending links.
+     * @see GET /api/v1/trends/links
+     */
+    trendingLinks: v.software === MASTODON && gte(v.compatVersion, '3.5.0'),
+
+    /**
      * Trending statuses.
      * @see GET /api/v1/trends/statuses
      */
