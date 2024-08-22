@@ -382,7 +382,7 @@ const getFeatures = (instance?: Instance) => {
      * @see PATCH /api/v1/pleroma/admin/domains/:id
      * @see DELETE /api/v1/pleroma/admin/domains/:id
      */
-    domains: instance?.pleroma.metadata.multitenancy.enabled || false,
+    domains: any([instance?.pleroma.metadata.multitenancy.enabled]),
 
     /**
      * Ability to edit profile information.
@@ -1035,7 +1035,11 @@ const getFeatures = (instance?: Instance) => {
      * Can translate statuses.
      * @see POST /api/v1/statuses/:id/translate
      */
-    translations: features.includes('translation') || instance?.configuration.translation.enabled || false,
+    translations: any([
+      features.includes('translation'),
+      features.includes('akkoma:machine_translation'),
+      instance?.configuration.translation.enabled,
+    ]),
 
     /**
      * Trending links.

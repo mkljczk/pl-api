@@ -63,7 +63,7 @@ import {
   webPushSubscriptionSchema,
 } from './entities';
 import { filteredArray } from './entities/utils';
-import { type Features, getFeatures, GOTOSOCIAL, MASTODON, MITRA } from './features';
+import { AKKOMA, type Features, getFeatures, GOTOSOCIAL, MITRA } from './features';
 import request, { getNextLink, getPrevLink, type RequestBody, RequestMeta } from './request';
 import { buildFullPath } from './utils/url';
 
@@ -82,7 +82,6 @@ import type {
   GroupRole,
   Instance,
   Notification,
-  Report,
   ScheduledStatus,
   Status,
   StreamingEvent,
@@ -253,14 +252,14 @@ class PlApiClient {
     const response = await this.request('/api/v1/pleroma/admin/users', { params });
 
     return {
-      previous: !params.page ? null : () => this.#paginatedPleromaAccounts({...params, page: params.page! - 1}),
+      previous: !params.page ? null : () => this.#paginatedPleromaAccounts({ ...params, page: params.page! - 1 }),
       next: response.json?.count > (params.page_size * ((params.page || 1) - 1) + response.json?.users?.length)
-        ? () => this.#paginatedPleromaAccounts({...params, page: (params.page || 0) + 1})
+        ? () => this.#paginatedPleromaAccounts({ ...params, page: (params.page || 0) + 1 })
         : null,
       items: filteredArray(adminAccountSchema).parse(response.json?.users),
       partial: response.status === 206,
-    }
-  }
+    };
+  };
 
   #paginatedPleromaReports = async (params: {
     state?: 'open' | 'closed' | 'resolved';
@@ -271,14 +270,14 @@ class PlApiClient {
     const response = await this.request('/api/v1/pleroma/admin/reports', { params });
 
     return {
-      previous: !params.page ? null : () => this.#paginatedPleromaReports({...params, page: params.page! - 1}),
+      previous: !params.page ? null : () => this.#paginatedPleromaReports({ ...params, page: params.page! - 1 }),
       next: response.json?.total > (params.page_size * ((params.page || 1) - 1) + response.json?.reports?.length)
-        ? () => this.#paginatedPleromaReports({...params, page: (params.page || 0) + 1})
+        ? () => this.#paginatedPleromaReports({ ...params, page: (params.page || 0) + 1 })
         : null,
       items: filteredArray(adminReportSchema).parse(response.json?.reports),
       partial: response.status === 206,
-    }
-  }
+    };
+  };
 
   /** Register client applications that can be used to obtain OAuth tokens. */
   public readonly apps = {
@@ -1740,7 +1739,13 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/statuses/#translate}
      */
     translateStatus: async (statusId: string, lang?: string) => {
-      const response = await this.request(`/api/v1/statuses/${statusId}/translate`, { method: 'POST', body: { lang } });
+      let response;
+      if (this.features.version.build === AKKOMA) {
+        response = await this.request(`/api/v1/statuses/${statusId}/translations/${lang}`);
+
+      } else {
+        response = await this.request(`/api/v1/statuses/${statusId}/translate`, { method: 'POST', body: { lang } });
+      }
 
       return translationSchema.parse(response.json);
     },
@@ -2631,6 +2636,18 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/instance/#translation_languages}
      */
     getInstanceTranslationLanguages: async () => {
+      if (this.features.version.build === AKKOMA) {
+        const response = await this.request<{
+          source: Array<{ code: string; name: string }>;
+          target: Array<{ code: string; name: string }>;
+        }>('/api/v1/instance/translation_languages');
+
+        return Object.fromEntries(response.json.source.map(source => [
+          source.code,
+          response.json.target.map(lang => lang.code).filter(lang => lang !== source.code),
+        ]));
+      }
+
       const response = await this.request('/api/v1/instance/translation_languages');
 
       return z.record(z.array(z.string())).parse(response.json);
