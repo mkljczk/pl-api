@@ -63,7 +63,7 @@ import {
   webPushSubscriptionSchema,
 } from './entities';
 import { filteredArray } from './entities/utils';
-import { type Features, getFeatures, GOTOSOCIAL, MITRA } from './features';
+import { type Features, getFeatures, GOTOSOCIAL, MASTODON, MITRA } from './features';
 import request, { getNextLink, getPrevLink, type RequestBody, RequestMeta } from './request';
 import { buildFullPath } from './utils/url';
 
@@ -82,6 +82,7 @@ import type {
   GroupRole,
   Instance,
   Notification,
+  Report,
   ScheduledStatus,
   Status,
   StreamingEvent,
@@ -238,6 +239,46 @@ class PlApiClient {
       partial: response.status === 206,
     };
   };
+
+  #paginatedPleromaAccounts = async (params: {
+    query?: string;
+    filters?: string;
+    page?: number;
+    page_size: number;
+    tags?: Array<string>;
+    actor_types?: Array<string>;
+    name?: string;
+    email?: string;
+  }): Promise<PaginatedResponse<AdminAccount>> => {
+    const response = await this.request('/api/v1/pleroma/admin/users', { params });
+
+    return {
+      previous: !params.page ? null : () => this.#paginatedPleromaAccounts({...params, page: params.page! - 1}),
+      next: response.json?.count > (params.page_size * ((params.page || 1) - 1) + response.json?.users?.length)
+        ? () => this.#paginatedPleromaAccounts({...params, page: (params.page || 0) + 1})
+        : null,
+      items: filteredArray(adminAccountSchema).parse(response.json?.users),
+      partial: response.status === 206,
+    }
+  }
+
+  #paginatedPleromaReports = async (params: {
+    state?: 'open' | 'closed' | 'resolved';
+    limit?: number;
+    page?: number;
+    page_size: number;
+  }): Promise<PaginatedResponse<AdminReport>> => {
+    const response = await this.request('/api/v1/pleroma/admin/reports', { params });
+
+    return {
+      previous: !params.page ? null : () => this.#paginatedPleromaReports({...params, page: params.page! - 1}),
+      next: response.json?.total > (params.page_size * ((params.page || 1) - 1) + response.json?.reports?.length)
+        ? () => this.#paginatedPleromaReports({...params, page: (params.page || 0) + 1})
+        : null,
+      items: filteredArray(adminReportSchema).parse(response.json?.reports),
+      partial: response.status === 206,
+    }
+  }
 
   /** Register client applications that can be used to obtain OAuth tokens. */
   public readonly apps = {
@@ -2718,8 +2759,28 @@ class PlApiClient {
        * View all accounts, optionally matching certain criteria for filtering, up to 100 at a time.
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#v2}
        */
-      getAccounts: async (params: AdminGetAccountsParams) =>
-        this.#paginatedGet<AdminAccount>('/api/v2/admin/accounts', { params }, adminAccountSchema),
+      getAccounts: async (params: AdminGetAccountsParams) => {
+        if (this.features.mastodonAdmin) {
+          return this.#paginatedGet<AdminAccount>('/api/v2/admin/accounts', { params }, adminAccountSchema);
+        } else {
+          return this.#paginatedPleromaAccounts({
+            query: params.username,
+            name: params.display_name,
+            email: params.email,
+            filters: [
+              params.origin === 'local' && 'local',
+              params.origin === 'remote' && 'external',
+              params.status === 'active' && 'active',
+              params.status === 'pending' && 'need_approval',
+              params.status === 'pending' && 'unconfirmed',
+              params.status === 'disabled' && 'deactivated',
+              params.permissions === 'staff' && 'is_admin',
+              params.permissions === 'staff' && 'is_moderator',
+            ].filter(filter => filter).join(','),
+            page_size: 100,
+          });
+        }
+      },
 
       /**
        * View a specific account
@@ -2727,7 +2788,13 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#get-one}
        */
       getAccount: async (accountId: string) => {
-        const response = await this.request(`/api/v1/admin/accounts/${accountId}`);
+        let response;
+
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/accounts/${accountId}`);
+        } else {
+          response = await this.request(`/api/v1/admin/users/${accountId}`);
+        }
 
         return adminAccountSchema.parse(response.json);
       },
@@ -2891,15 +2958,28 @@ class PlApiClient {
        * View information about all reports.
        * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#get}
        */
-      getReports: (params: AdminGetReportsParams) =>
-        this.#paginatedGet<AdminReport>('/api/v1/admin/reports', { params }, adminReportSchema),
+      getReports: async (params: AdminGetReportsParams) => {
+        if (this.features.mastodonAdmin) {
+          return this.#paginatedGet<AdminReport>('/api/v1/admin/reports', { params }, adminReportSchema);
+        } else {
+          return this.#paginatedPleromaReports({
+            state: params.resolved === true ? 'resolved' : params.resolved === false ? 'open' : undefined,
+            page_size: params.limit || 100,
+          });
+        }
+      },
 
       /**
        * View a single report
        * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#get-one}
        */
       getReport: async (reportId: string) => {
-        const response = await this.request(`/api/v1/admin/reports/${reportId}`);
+        let response;
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/reports/${reportId}`);
+        } else {
+          response = await this.request(`/api/v1/pleroma/admin/reports/${reportId}`);
+        }
 
         return adminReportSchema.parse(response.json);
       },
@@ -2943,7 +3023,15 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#resolve}
        */
       resolveReport: async (reportId: string) => {
-        const response = await this.request(`/api/v1/admin/reports/${reportId}/resolve`, { method: 'POST' });
+        let response;
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/reports/${reportId}/resolve`, { method: 'POST' });
+        } else {
+          response = await this.request(`/api/v1/pleroma/admin/reports/${reportId}`, {
+            method: 'PATCH',
+            body: { reports: [{ id: reportId, state: 'resolved' }] },
+          });
+        }
 
         return adminReportSchema.parse(response.json);
       },
@@ -2954,7 +3042,15 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#reopen}
        */
       reopenReport: async (reportId: string) => {
-        const response = await this.request(`/api/v1/admin/reports/${reportId}/reopen`, { method: 'POST' });
+        let response;
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/reports/${reportId}/reopen`, { method: 'POST' });
+        } else {
+          response = await this.request(`/api/v1/pleroma/admin/reports/${reportId}`, {
+            method: 'PATCH',
+            body: { reports: [{ id: reportId, state: 'open' }] },
+          });
+        }
 
         return adminReportSchema.parse(response.json);
       },

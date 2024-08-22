@@ -30,10 +30,10 @@ const getNextLink = (response: Pick<Response, 'headers'>): string | null =>
 const getPrevLink = (response: Pick<Response, 'headers'>): string | null =>
   getLinks(response).refs.find(link => link.rel.toLocaleLowerCase() === 'prev')?.uri || null;
 
-interface RequestBody {
+interface RequestBody<Params = Record<string, any>> {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: any;
-  params?: Record<string, any>;
+  params?: Params;
   onUploadProgress?: (e: ProgressEvent) => void;
   signal?: AbortSignal;
   contentType?: string;
