@@ -926,6 +926,7 @@ const getFeatures = (instance?: Instance) => {
     removeFromFollowers: any([
       v.software === MASTODON,
       v.software === PLEROMA && gte(v.version, '2.5.0'),
+      v.software === PLEROMA && v.build === AKKOMA,
     ]),
 
     /**

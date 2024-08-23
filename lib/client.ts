@@ -2640,11 +2640,11 @@ class PlApiClient {
         const response = await this.request<{
           source: Array<{ code: string; name: string }>;
           target: Array<{ code: string; name: string }>;
-        }>('/api/v1/instance/translation_languages');
+        }>('/api/v1/akkoma/translation/languages');
 
         return Object.fromEntries(response.json.source.map(source => [
-          source.code,
-          response.json.target.map(lang => lang.code).filter(lang => lang !== source.code),
+          source.code.toLocaleLowerCase(),
+          response.json.target.map(lang => lang.code).filter(lang => lang !== source.code).map(lang => lang.toLocaleLowerCase()),
         ]));
       }
 
