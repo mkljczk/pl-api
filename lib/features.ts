@@ -845,8 +845,9 @@ const getFeatures = (instance?: Instance) => {
      */
     postLanguages: any([
       v.software === MASTODON,
-      v.software === PLEROMA && v.build === REBASED,
+      v.software === PLEROMA && v.build === AKKOMA,
       v.software === PLEROMA && v.build === PL,
+      v.software === PLEROMA && v.build === REBASED,
       v.software === GOTOSOCIAL,
     ]),
 
