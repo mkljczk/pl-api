@@ -657,7 +657,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/follow_requests/#accept}
      */
     acceptFollowRequest: async (accountId: string) => {
-      const response = await this.request(`/api/v1/follow_requests/${accountId}/accept`, { method: 'POST' });
+      const response = await this.request(`/api/v1/follow_requests/${accountId}/authorize`, { method: 'POST' });
 
       return relationshipSchema.parse(response.json);
     },
