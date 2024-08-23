@@ -8,11 +8,11 @@ interface CreatePushNotificationsSubscriptionParams {
       /** String. Auth secret. Base64 encoded string of 16 bytes of random data. */
       auth: string;
     };
-    data?: {
-      alerts?: Record<string, boolean>;
-      /** String. Specify whether to receive push notifications from `all`, `followed`, `follower`, or `none` users. */
-      policy?: string;
-    };
+  };
+  data?: {
+    alerts?: Record<string, boolean>;
+    /** String. Specify whether to receive push notifications from `all`, `followed`, `follower`, or `none` users. */
+    policy?: string;
   };
 }
 
