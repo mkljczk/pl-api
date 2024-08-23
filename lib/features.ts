@@ -8,6 +8,12 @@ import type { Instance } from './entities';
 const any = (arr: Array<any>): boolean => arr.some(Boolean);
 
 /**
+ * Ditto, a Nostr server with Mastodon API.
+ * @see {@link https://gitlab.com/soapbox-pub/ditto}
+ */
+const DITTO = 'Ditto';
+
+/**
  * Firefish, a fork of Misskey. Formerly known as Calckey.
  * @see {@link https://joinfirefish.org/}
  */
@@ -156,12 +162,13 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/v1/accounts/lookup
      */
     accountLookup: any([
+      v.software === DITTO,
       v.software === FIREFISH,
+      v.software === GOTOSOCIAL,
       v.software === ICESHRIMP,
       v.software === MASTODON,
       v.software === PLEROMA && gte(v.version, '2.5.0'),
       v.software === TAKAHE && gte(v.version, '0.6.1'),
-      v.software === GOTOSOCIAL,
       v.software === TOKI,
     ]),
 
@@ -263,14 +270,15 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/v1/bookmarks
      */
     bookmarks: any([
+      v.software === DITTO,
       v.software === FIREFISH,
+      v.software === GOTOSOCIAL,
       v.software === ICESHRIMP,
       v.software === FRIENDICA,
       v.software === MASTODON,
-      v.software === PLEROMA,
       v.software === PIXELFED,
+      v.software === PLEROMA,
       v.software === TAKAHE && gte(v.version, '0.9.0'),
-      v.software === GOTOSOCIAL,
       v.software === TOKI,
     ]),
 
@@ -279,9 +287,9 @@ const getFeatures = (instance?: Instance) => {
      * @see PATCH /api/v1/accounts/update_credentials
      */
     bots: any([
+      v.software === GOTOSOCIAL,
       v.software === MASTODON,
       v.software === PLEROMA,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -311,14 +319,13 @@ const getFeatures = (instance?: Instance) => {
      */
     conversations: any([
       v.software === FIREFISH,
+      v.software === FRIENDICA,
       v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
       v.software === ICESHRIMP,
-      v.software === FRIENDICA,
       v.software === MASTODON,
-      v.software === PLEROMA,
       v.software === PIXELFED,
+      v.software === PLEROMA,
       v.software === TAKAHE,
-      v.software === GOTOSOCIAL,
     ]),
 
     /**
@@ -335,7 +342,10 @@ const getFeatures = (instance?: Instance) => {
      * Ability to address recipients of a status explicitly (with `to`).
      * @see POST /api/v1/statuses
      */
-    createStatusExplicitAddressing: v.software === PLEROMA,
+    createStatusExplicitAddressing: any([
+      v.software === DITTO,
+      v.software === PLEROMA,
+    ]),
 
     /**
      * @see POST /api/v1/statuses
@@ -391,13 +401,13 @@ const getFeatures = (instance?: Instance) => {
     editProfile: any([
       v.software === FIREFISH,
       v.software === FRIENDICA,
+      v.software === GOTOSOCIAL,
       v.software === ICESHRIMP,
       v.software === MASTODON,
       v.software === MITRA,
       v.software === PIXELFED,
       v.software === PLEROMA,
       v.software === TAKAHE && gte(v.version, '0.7.0'),
-      v.software === GOTOSOCIAL,
       v.software === TOKI,
     ]),
 
@@ -409,8 +419,8 @@ const getFeatures = (instance?: Instance) => {
       v.software === FRIENDICA && gte(v.version, '2022.12.0'),
       v.software === ICESHRIMP,
       v.software === MASTODON,
-      v.software === TAKAHE && gte(v.version, '0.8.0'),
       v.software === MITRA,
+      v.software === TAKAHE && gte(v.version, '0.8.0'),
       features.includes('editing'),
     ]),
 
@@ -481,6 +491,7 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/v1/accounts/familiar_followers
      */
     familiarFollowers: any([
+      v.software === DITTO,
       v.software === MASTODON,
       v.software === PLEROMA && gte(v.version, '2.6.0') && v.build === REBASED,
       v.software === PLEROMA && gte(v.version, '2.7.0'),
@@ -552,6 +563,7 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/pleroma/frontend_configurations
      */
     frontendConfigurations: any([
+      v.software === DITTO,
       v.software === PLEROMA,
     ]),
 
@@ -712,6 +724,7 @@ const getFeatures = (instance?: Instance) => {
      * @see POST /api/v1/admin/accounts/:account_id/approve
      */
     mastodonAdmin: any([
+      v.software === DITTO,
       v.software === GOTOSOCIAL,
       v.software === MASTODON,
       v.software === PLEROMA && v.build === REBASED && gte(v.version, '2.5.0'),
@@ -878,13 +891,14 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/v1/timelines/public
      */
     publicTimeline: any([
+      v.software === DITTO,
       v.software === FIREFISH,
       v.software === FRIENDICA,
+      v.software === GOTOSOCIAL,
       v.software === ICESHRIMP,
       v.software === MASTODON,
       v.software === PLEROMA,
       v.software === TAKAHE,
-      v.software === GOTOSOCIAL,
       v.software === TOKI,
     ]),
 
@@ -1052,8 +1066,9 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/v1/trends/statuses
      */
     trendingStatuses: any([
-      v.software === ICESHRIMP,
+      v.software === DITTO,
       v.software === FRIENDICA && gte(v.version, '2022.12.0'),
+      v.software === ICESHRIMP,
       v.software === MASTODON,
     ]),
 
@@ -1062,6 +1077,7 @@ const getFeatures = (instance?: Instance) => {
      * @see GET /api/v1/trends
      */
     trends: any([
+      v.software === DITTO,
       v.software === FRIENDICA && gte(v.version, '2022.12.0'),
       v.software === ICESHRIMP,
       v.software === MASTODON,
@@ -1134,6 +1150,7 @@ const parseVersion = (version: string): Backend => {
 };
 
 export {
+  DITTO,
   FIREFISH,
   FRIENDICA,
   GOTOSOCIAL,
