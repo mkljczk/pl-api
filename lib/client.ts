@@ -102,10 +102,12 @@ import type {
   AdminGetIpBlocksParams,
   AdminGetMeasuresParams,
   AdminGetReportsParams,
+  AdminGetStatusesParams,
   AdminMeasureKey,
   AdminPerformAccountActionParams,
   AdminUpdateDomainBlockParams,
   AdminUpdateReportParams,
+  AdminUpdateStatusParams,
   BubbleTimelineParams,
   CreateAccountParams,
   CreateApplicationParams,
@@ -278,6 +280,25 @@ class PlApiClient {
       items: filteredArray(adminReportSchema).parse(response.json?.reports),
       partial: response.status === 206,
       total: response.json?.total,
+    };
+  };
+
+  #paginatedPleromaStatuses = async (params: {
+    page_size?: number;
+    local_only?: boolean;
+    godmode?: boolean;
+    with_reblogs?: boolean;
+    page?: number;
+  }): Promise<PaginatedResponse<Status>> => {
+    const response = await this.request('/api/v1/pleroma/admin/statuses', { params });
+
+    return {
+      previous: !params.page ? null : () => this.#paginatedPleromaStatuses({ ...params, page: params.page! - 1 }),
+      next: response.json?.length
+        ? () => this.#paginatedPleromaStatuses({ ...params, page: (params.page || 0) + 1 })
+        : null,
+      items: filteredArray(statusSchema).parse(response.json),
+      partial: response.status === 206,
     };
   };
 
@@ -2940,9 +2961,9 @@ class PlApiClient {
         if (this.features.mastodonAdmin) {
           response = await this.request(`/api/v1/admin/accounts/${accountId}/unsuspend`, { method: 'POST' });
         } else {
-          const account = await this.admin.accounts.getAccount(accountId)!;
+          const { account } = await this.admin.accounts.getAccount(accountId)!;
 
-          response = await this.request('/api/v1/pleroma/admin/users/activate', { body: { nicknames: [account.account!.username] } });
+          response = await this.request('/api/v1/pleroma/admin/users/activate', { body: { nicknames: [account!.username] } });
           response.json = response.json?.users?.[0];
         }
 
@@ -2958,6 +2979,56 @@ class PlApiClient {
         const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsensitive`, { method: 'POST' });
 
         return adminAccountSchema.parse(response.json);
+      },
+
+      /**
+       * Requires features{@link Features['pleromaAdminAccounts']}.
+       */
+      promoteToAdmin: async (accountId: string) => {
+        const { account } = await this.admin.accounts.getAccount(accountId)!;
+
+        await this.request('/api/v1/pleroma/admin/users/permission_group/moderator', {
+          method: 'DELETE',
+          body: { nicknames: [account!.username] },
+        });
+        const response = await this.request('/api/v1/pleroma/admin/users/permission_group/admin', {
+          method: 'POST',
+          body: { nicknames: [account!.username] },
+        });
+
+        return response.json as {};
+      },
+
+      /**
+       * Requires features{@link Features['pleromaAdminAccounts']}.
+       */
+      promoteToModerator: async (accountId: string) => {
+        const { account } = await this.admin.accounts.getAccount(accountId)!;
+
+        await this.request('/api/v1/pleroma/admin/users/permission_group/admin', {
+          method: 'DELETE', body: { nicknames: [account!.username] } });
+        const response = await this.request('/api/v1/pleroma/admin/users/permission_group/moderator', {
+          method: 'POST', body: { nicknames: [account!.username] } });
+
+        return response.json as {};
+      },
+
+      /**
+       * Requires features{@link Features['pleromaAdminAccounts']}.
+       */
+      demoteToUser: async (accountId: string) => {
+        const { account } = await this.admin.accounts.getAccount(accountId)!;
+
+        await this.request('/api/v1/pleroma/admin/users/permission_group/moderator', {
+          method: 'DELETE',
+          body: { nicknames: [account!.username] },
+        });
+        const response = await this.request('/api/v1/pleroma/admin/users/permission_group/admin', {
+          method: 'DELETE',
+          body: { nicknames: [account!.username] },
+        });
+
+        return response.json as {};
       },
     },
 
@@ -3126,6 +3197,60 @@ class PlApiClient {
         }
 
         return adminReportSchema.parse(response.json);
+      },
+    },
+
+    statuses: {
+      /**
+       * @param params Retrieves all latest statuses
+       *
+       * The params are subject to change in case Mastodon implements alike route.
+       *
+       * Requires features{@link Features['pleromaAdminStatuses']}.
+       * @see {@link https://docs.pleroma.social/backend/development/API/admin_api/#get-apiv1pleromaadminstatuses}
+       */
+      getStatuses: async (params?: AdminGetStatusesParams) => this.#paginatedPleromaStatuses({
+        page_size: params?.limit || 100,
+        page: 1,
+        local_only: params?.local_only,
+        with_reblogs: params?.with_reblogs,
+        godmode: params?.with_private,
+      }),
+
+      /**
+       * Show status by id
+       *
+       * Requires features{@link Features['pleromaAdminStatuses']}.
+       * @see {@link https://docs.pleroma.social/backend/development/API/admin_api/#get-apiv1pleromaadminstatusesid}
+      */
+      getStatus: async (statusId: string) => {
+        const response = await this.request(`/api/v1/pleroma/admin/statuses/${statusId}`);
+
+        return statusSchema.parse(response.json);
+      },
+
+      /**
+       * Change the scope of an individual reported status
+       *
+       * Requires features{@link Features['pleromaAdminStatuses']}.
+       * @see {@link https://docs.pleroma.social/backend/development/API/admin_api/#put-apiv1pleromaadminstatusesid}
+       */
+      updateStatus: async (statusId: string, params: AdminUpdateStatusParams) => {
+        const response = await this.request(`/api/v1/pleroma/admin/statuses/${statusId}`, { method: 'PUT', params });
+
+        return statusSchema.parse(response.json);
+      },
+
+      /**
+       * Delete an individual reported status
+       *
+       * Requires features{@link Features['pleromaAdminStatuses']}.
+       * @see {@link https://docs.pleroma.social/backend/development/API/admin_api/#delete-apiv1pleromaadminstatusesid}
+       */
+      deleteStatus: async (statusId: string) => {
+        const response = await this.request(`/api/v1/pleroma/admin/statuses/${statusId}`, { method: 'DELETE' });
+
+        return response.json as {};
       },
     },
 

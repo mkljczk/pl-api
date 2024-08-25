@@ -71,6 +71,18 @@ interface AdminUpdateReportParams {
   rule_ids?: string[];
 }
 
+interface AdminGetStatusesParams {
+  limit?: number;
+  local_only?: boolean;
+  with_reblogs?: boolean;
+  with_private?: boolean;
+}
+
+interface AdminUpdateStatusParams {
+  sensitive?: boolean;
+  visibility?: 'public' | 'private' | 'unlisted';
+}
+
 type AdminGetCanonicalEmailBlocks = PaginationParams;
 
 type AdminDimensionKey = 'languages' | 'sources' | 'servers' | 'space_usage' | 'software_versions' | 'tag_servers' | 'tag_languages' | 'instance_accounts' | 'instance_languages';
@@ -172,6 +184,8 @@ export type {
   AdminUpdateDomainBlockParams,
   AdminGetReportsParams,
   AdminUpdateReportParams,
+  AdminGetStatusesParams,
+  AdminUpdateStatusParams,
   AdminGetCanonicalEmailBlocks,
   AdminDimensionKey,
   AdminGetDimensionsParams,

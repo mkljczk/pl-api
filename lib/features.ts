@@ -829,6 +829,10 @@ const getFeatures = (instance?: Instance) => {
       v.software === GOTOSOCIAL,
     ]),
 
+    pleromaAdminAccoumts: v.software === PLEROMA,
+
+    pleromaAdminStatuses: v.software === PLEROMA,
+
     /**
      * Displays a form to follow a user when logged out.
      * @see POST /main/ostatus
