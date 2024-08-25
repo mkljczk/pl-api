@@ -732,6 +732,15 @@ const getFeatures = (instance?: Instance) => {
     ]),
 
     /**
+     * Can perform moderation actions with account and reports.
+     * @see {@link https://docs.joinmastodon.org/methods/admin/}
+     * @see GET /api/v2/admin/accounts
+     */
+    mastodonAdminV2: any([
+      v.software === MASTODON && gte(v.version, '3.5.0'),
+    ]),
+
+    /**
      * Supports V2 media uploads.
      * @see POST /api/v2/media
      */

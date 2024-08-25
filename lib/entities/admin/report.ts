@@ -2,7 +2,7 @@ import pick from 'lodash.pick';
 import { z } from 'zod';
 
 import { ruleSchema } from '../rule';
-import { statusSchema } from '../status';
+import { statusWithoutAccountSchema } from '../status';
 import { dateSchema, filteredArray } from '../utils';
 
 import { adminAccountSchema } from './account';
@@ -37,7 +37,7 @@ const adminReportSchema = z.preprocess((report: any) => {
   target_account: adminAccountSchema,
   assigned_account: adminAccountSchema.nullable().catch(null),
   action_taken_by_account: adminAccountSchema.nullable().catch(null),
-  statuses: filteredArray(statusSchema),
+  statuses: filteredArray(statusWithoutAccountSchema),
   rules: filteredArray(ruleSchema),
 }));
 

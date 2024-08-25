@@ -258,6 +258,7 @@ class PlApiClient {
         : null,
       items: filteredArray(adminAccountSchema).parse(response.json?.users),
       partial: response.status === 206,
+      total: response.json?.total,
     };
   };
 
@@ -276,6 +277,7 @@ class PlApiClient {
         : null,
       items: filteredArray(adminReportSchema).parse(response.json?.reports),
       partial: response.status === 206,
+      total: response.json?.total,
     };
   };
 
@@ -2776,11 +2778,11 @@ class PlApiClient {
        * View all accounts, optionally matching certain criteria for filtering, up to 100 at a time.
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#v2}
        */
-      getAccounts: async (params: AdminGetAccountsParams) => {
-        if (this.features.mastodonAdmin) {
+      getAccounts: async (params?: AdminGetAccountsParams) => {
+        if (this.features.mastodonAdminV2) {
           return this.#paginatedGet<AdminAccount>('/api/v2/admin/accounts', { params }, adminAccountSchema);
         } else {
-          return this.#paginatedPleromaAccounts({
+          return this.#paginatedPleromaAccounts(params ? {
             query: params.username,
             name: params.display_name,
             email: params.email,
@@ -2789,13 +2791,12 @@ class PlApiClient {
               params.origin === 'remote' && 'external',
               params.status === 'active' && 'active',
               params.status === 'pending' && 'need_approval',
-              params.status === 'pending' && 'unconfirmed',
               params.status === 'disabled' && 'deactivated',
               params.permissions === 'staff' && 'is_admin',
               params.permissions === 'staff' && 'is_moderator',
             ].filter(filter => filter).join(','),
             page_size: 100,
-          });
+          } : { page_size: 100 });
         }
       },
 
@@ -2822,7 +2823,16 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#approve}
        */
       approveAccount: async (accountId: string) => {
-        const response = await this.request(`/api/v1/admin/accounts/${accountId}/approve`, { method: 'POST' });
+        let response;
+
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/accounts/${accountId}/approve`, { method: 'POST' });
+        } else {
+          const account = await this.admin.accounts.getAccount(accountId)!;
+
+          response = await this.request('/api/v1/pleroma/admin/users/approve', { body: { nicknames: [account.account!.username] } });
+          response.json = response.json?.users?.[0];
+        }
 
         return adminAccountSchema.parse(response.json);
       },
@@ -2833,9 +2843,20 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#reject}
        */
       rejectAccount: async (accountId: string) => {
-        const response = await this.request(`/api/v1/admin/accounts/${accountId}/reject`, { method: 'POST' });
+        let response;
 
-        return adminAccountSchema.parse(response.json);
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/accounts/${accountId}/reject`, { method: 'POST' });
+        } else {
+          const account = await this.admin.accounts.getAccount(accountId)!;
+
+          response = await this.request('/api/v1/pleroma/admin/users/approve', { body: {
+            method: 'DELETE',
+            nicknames: [account.account!.username],
+          } });
+        }
+
+        return adminAccountSchema.safeParse(response.json).data || {};
       },
 
       /**
@@ -2854,8 +2875,25 @@ class PlApiClient {
        * Perform an action against an account and log this action in the moderation history. Also resolves any open reports against this account.
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#action}
        */
-      performAccountAction: async (accountId: string, type: AdminAccountAction, params: AdminPerformAccountActionParams) => {
-        const response = await this.request(`/api/v1/admin/accounts/${accountId}/action`, { body: { ...params, type } });
+      performAccountAction: async (accountId: string, type: AdminAccountAction, params?: AdminPerformAccountActionParams) => {
+        let response;
+
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/accounts/${accountId}/action`, { body: { ...params, type } });
+        } else {
+          const account = await this.admin.accounts.getAccount(accountId)!;
+
+          switch (type) {
+            case 'disable':
+            case 'suspend':
+              response = await this.request('/api/v1/pleroma/admin/users/deactivate', { body: { nicknames: [account.account!.username] } });
+              break;
+            default:
+              response = { json: {} };
+              break;
+          }
+          if (params?.report_id) await this.admin.reports.resolveReport(params.report_id);
+        }
 
         return response.json as {};
       },
@@ -2866,7 +2904,16 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#enable}
        */
       enableAccount: async (accountId: string) => {
-        const response = await this.request(`/api/v1/admin/accounts/${accountId}/enable`, { method: 'POST' });
+        let response;
+
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/accounts/${accountId}/enable`, { method: 'POST' });
+        } else {
+          const account = await this.admin.accounts.getAccount(accountId)!;
+
+          response = await this.request('/api/v1/pleroma/admin/users/activate', { body: { nicknames: [account.account!.username] } });
+          response.json = response.json?.users?.[0];
+        }
 
         return adminAccountSchema.parse(response.json);
       },
@@ -2888,7 +2935,16 @@ class PlApiClient {
        * @see {@link https://docs.joinmastodon.org/methods/admin/accounts/#unsuspend}
        */
       unsuspendAccount: async (accountId: string) => {
-        const response = await this.request(`/api/v1/admin/accounts/${accountId}/unsuspend`, { method: 'POST' });
+        let response;
+
+        if (this.features.mastodonAdmin) {
+          response = await this.request(`/api/v1/admin/accounts/${accountId}/unsuspend`, { method: 'POST' });
+        } else {
+          const account = await this.admin.accounts.getAccount(accountId)!;
+
+          response = await this.request('/api/v1/pleroma/admin/users/activate', { body: { nicknames: [account.account!.username] } });
+          response.json = response.json?.users?.[0];
+        }
 
         return adminAccountSchema.parse(response.json);
       },
@@ -2912,7 +2968,7 @@ class PlApiClient {
        * Show information about all blocked domains.
        * @see {@link https://docs.joinmastodon.org/methods/admin/domain_blocks/#get}
        */
-      getDomainBlocks: (params: AdminGetDomainBlocksParams) =>
+      getDomainBlocks: (params?: AdminGetDomainBlocksParams) =>
         this.#paginatedGet<AdminDomainBlock>('/api/v1/admin/domain_blocks', { params }, adminDomainBlockSchema),
 
       /**
@@ -2975,13 +3031,13 @@ class PlApiClient {
        * View information about all reports.
        * @see {@link https://docs.joinmastodon.org/methods/admin/reports/#get}
        */
-      getReports: async (params: AdminGetReportsParams) => {
+      getReports: async (params?: AdminGetReportsParams) => {
         if (this.features.mastodonAdmin) {
           return this.#paginatedGet<AdminReport>('/api/v1/admin/reports', { params }, adminReportSchema);
         } else {
           return this.#paginatedPleromaReports({
-            state: params.resolved === true ? 'resolved' : params.resolved === false ? 'open' : undefined,
-            page_size: params.limit || 100,
+            state: params?.resolved === true ? 'resolved' : params?.resolved === false ? 'open' : undefined,
+            page_size: params?.limit || 100,
           });
         }
       },
@@ -3114,7 +3170,7 @@ class PlApiClient {
        * List all canonical email blocks
        * @see {@link https://docs.joinmastodon.org/methods/admin/canonical_email_blocks/#get}
        */
-      getCanonicalEmailBlocks: async (params: AdminGetCanonicalEmailBlocks) =>
+      getCanonicalEmailBlocks: async (params?: AdminGetCanonicalEmailBlocks) =>
         this.#paginatedGet<AdminCanonicalEmailBlock>('/api/v1/admin/canonical_email_blocks', { params }, adminCanonicalEmailBlockSchema),
 
       /**
@@ -3180,7 +3236,7 @@ class PlApiClient {
        * Show information about all allowed domains.
        * @see {@link https://docs.joinmastodon.org/methods/admin/domain_allows/#get}
        */
-      getDomainAllows: (params: AdminGetDomainAllowsParams) =>
+      getDomainAllows: (params?: AdminGetDomainAllowsParams) =>
         this.#paginatedGet<AdminDomainAllow>('/api/v1/admin/domain_allows', { params }, adminDomainAllowSchema),
 
       /**
@@ -3224,7 +3280,7 @@ class PlApiClient {
        * Show information about all email domains blocked from signing up.
        * @see {@link https://docs.joinmastodon.org/methods/admin/email_domain_blocks/#get}
        */
-      getEmailDomainBlocks: (params: AdminGetEmailDomainBlocksParams) =>
+      getEmailDomainBlocks: (params?: AdminGetEmailDomainBlocksParams) =>
         this.#paginatedGet<AdminEmailDomainBlock>('/api/v1/admin/email_domain_blocks', { params }, adminEmailDomainBlockSchema),
 
       /**
@@ -3323,7 +3379,7 @@ class PlApiClient {
        * Obtain quantitative metrics about the server.
        * @see {@link https://docs.joinmastodon.org/methods/admin/measures/#get}
        */
-      getMeasures: async (keys: AdminMeasureKey[], start_at: string, end_at: string, params: AdminGetMeasuresParams) => {
+      getMeasures: async (keys: AdminMeasureKey[], start_at: string, end_at: string, params?: AdminGetMeasuresParams) => {
         const response = await this.request('/api/v1/admin/measures', { params: { ...params, keys, start_at, end_at } });
 
         return filteredArray(adminMeasureSchema).parse(response.json);
@@ -3565,7 +3621,7 @@ class PlApiClient {
     /** @see {@link https://github.com/mastodon/mastodon/pull/19059} */
       groups: {
         /** list groups known to the instance. Mimics the interface of `/api/v1/admin/accounts` */
-        getGroups: async (params: AdminGetGroupsParams) => {
+        getGroups: async (params?: AdminGetGroupsParams) => {
           const response = await this.request('/api/v1/admin/groups', { params });
 
           return filteredArray(groupSchema).parse(response.json);

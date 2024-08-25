@@ -3,6 +3,7 @@ interface PaginatedResponse<T> {
   next: (() => Promise<PaginatedResponse<T>>) | null;
   items: Array<T>;
   partial: boolean;
+  total?: number;
 }
 
 export type {

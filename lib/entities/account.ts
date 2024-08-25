@@ -9,49 +9,53 @@ import { coerceObject, dateSchema, filteredArray } from './utils';
 const filterBadges = (tags?: string[]) =>
   tags?.filter(tag => tag.startsWith('badge:')).map(tag => roleSchema.parse({ id: tag, name: tag.replace(/^badge:/, '') }));
 
-const preprocessAccount = (account: any) => ({
-  username: account.username || account.acct.split('@')[0],
-  display_name: account.display_name.trim() || account.username,
-  roles: account.roles?.length ? account.roles : filterBadges(account.pleroma?.tags),
-  avatar_static: account.avatar_static || account.avatar,
-  header_static: account.header_static || account.header,
-  source: account.source
-    ? { ...(pick(account.pleroma?.source || {}, [
-      'show_role', 'no_rich_text', 'discoverable', 'actor_type', 'show_birthday',
-    ])), ...account.source }
-    : undefined,
-  local: typeof account.pleroma?.is_local === 'boolean' ? account.pleroma.is_local : account.acct.split('@')[1] === undefined,
-  discoverable: account.discoverable || account.pleroma?.source?.discoverable,
-  verified: account.verified || account.pleroma?.tags?.includes('verified'),
-  ...(pick(account.pleroma || {}, [
-    'ap_id',
-    'background_image',
-    'relationship',
-    'is_moderator',
-    'is_admin',
-    'hide_favorites',
-    'hide_followers',
-    'hide_follows',
-    'hide_followers_count',
-    'hide_follows_count',
-    'accepts_chat_messages',
-    'favicon',
-    'birthday',
-    'deactivated',
+const preprocessAccount = (account: any) => {
+  if (!account?.acct) return null;
 
-    'settings_store',
-    'chat_token',
-    'allow_following_move',
-    'unread_conversation_count',
-    'unread_notifications_count',
-    'notification_settings',
+  return {
+    username: account.username || account.acct.split('@')[0],
+    display_name: account.display_name.trim() || account.username,
+    roles: account.roles?.length ? account.roles : filterBadges(account.pleroma?.tags),
+    avatar_static: account.avatar_static || account.avatar,
+    header_static: account.header_static || account.header,
+    source: account.source
+      ? { ...(pick(account.pleroma?.source || {}, [
+        'show_role', 'no_rich_text', 'discoverable', 'actor_type', 'show_birthday',
+      ])), ...account.source }
+      : undefined,
+    local: typeof account.pleroma?.is_local === 'boolean' ? account.pleroma.is_local : account.acct.split('@')[1] === undefined,
+    discoverable: account.discoverable || account.pleroma?.source?.discoverable,
+    verified: account.verified || account.pleroma?.tags?.includes('verified'),
+    ...(pick(account.pleroma || {}, [
+      'ap_id',
+      'background_image',
+      'relationship',
+      'is_moderator',
+      'is_admin',
+      'hide_favorites',
+      'hide_followers',
+      'hide_follows',
+      'hide_followers_count',
+      'hide_follows_count',
+      'accepts_chat_messages',
+      'favicon',
+      'birthday',
+      'deactivated',
 
-    'location',
-  ])),
-  ...(pick(account.other_settings || {}), ['birthday', 'location']),
-  __meta: pick(account, ['pleroma', 'source']),
-  ...account,
-});
+      'settings_store',
+      'chat_token',
+      'allow_following_move',
+      'unread_conversation_count',
+      'unread_notifications_count',
+      'notification_settings',
+
+      'location',
+    ])),
+    ...(pick(account.other_settings || {}), ['birthday', 'location']),
+    __meta: pick(account, ['pleroma', 'source']),
+    ...account,
+  };
+};
 
 const fieldSchema = z.object({
   name: z.string(),

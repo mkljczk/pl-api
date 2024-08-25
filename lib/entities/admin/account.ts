@@ -15,10 +15,12 @@ const adminAccountSchema = z.preprocess((account: any) => {
      */
     return {
       id: account.id,
+      account: null,
       username: account.nickname,
       domain: account.nickname.split('@')[1] || null,
       created_at: account.created_at,
       email: account.email,
+      invite_request: account.registration_reason,
       role: account.roles?.is_admin
         ? roleSchema.parse({ name: 'Admin' })
         : account.roles?.moderator
@@ -53,7 +55,6 @@ const adminAccountSchema = z.preprocess((account: any) => {
   account: accountSchema.nullable().catch(null),
   created_by_application_id: z.string().optional().catch(undefined),
   invited_by_account_id: z.string().optional().catch(undefined),
-  registration_reason: z.string().nullable().catch(null),
 
   actor_type: z.string().nullable().catch(null),
   display_name: z.string().nullable().catch(null),

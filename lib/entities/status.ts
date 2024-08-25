@@ -103,7 +103,7 @@ const baseStatusSchema = z.object({
   interaction_policy: interactionPolicySchema,
 });
 
-const statusSchema = z.preprocess((status: any) => {
+const preprocess = (status: any) => {
   status = {
     ...(pick(status.pleroma || {}, [
       'quote',
@@ -130,7 +130,16 @@ const statusSchema = z.preprocess((status: any) => {
   };
 
   return status;
-}, baseStatusSchema.extend({
+};
+
+const statusSchema = z.preprocess(preprocess, baseStatusSchema.extend({
+  reblog: z.lazy(() => baseStatusSchema).nullable().catch(null),
+
+  quote: z.lazy(() => baseStatusSchema).nullable().catch(null),
+}));
+
+const statusWithoutAccountSchema = z.preprocess(preprocess, baseStatusSchema.omit({ account: true }).extend({
+  account: accountSchema.nullable().catch(null),
   reblog: z.lazy(() => baseStatusSchema).nullable().catch(null),
 
   quote: z.lazy(() => baseStatusSchema).nullable().catch(null),
@@ -138,4 +147,4 @@ const statusSchema = z.preprocess((status: any) => {
 
 type Status = Resolve<z.infer<typeof statusSchema>>;
 
-export { statusSchema, type Status };
+export { statusSchema, statusWithoutAccountSchema, type Status };
