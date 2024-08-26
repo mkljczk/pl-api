@@ -4,11 +4,11 @@ import { Resolve } from '../utils/types';
 
 import { coerceObject } from './utils';
 
-const interactionPolicyEntrySchema = z.enum(['public', 'followers', 'following', 'mutuals', 'mentioned', 'author', 'me']).or(z.string());
+const interactionPolicyEntrySchema = z.enum(['public', 'followers', 'following', 'mutuals', 'mentioned', 'author', 'me']);
 
 const interactionPolicyRuleSchema = coerceObject({
   always: z.array(interactionPolicyEntrySchema).default(['public']),
-  with_approval: z.array(interactionPolicyEntrySchema).default(['']),
+  with_approval: z.array(interactionPolicyEntrySchema).default([]),
 });
 
 /** @see {@link https://docs.gotosocial.org/en/latest/api/swagger/} */
