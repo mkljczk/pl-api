@@ -36,9 +36,9 @@ interface UpdateCredentialsParams {
   /** String. The account bio. */
   note?: string;
   /** Avatar image encoded using `multipart/form-data` */
-  avatar?: File;
+  avatar?: File | '';
   /** Header image encoded using `multipart/form-data` */
-  header?: File;
+  header?: File | '';
   /** Boolean. Whether manual approval of follow requests is required. */
   locked?: boolean;
   /** Boolean. Whether the account has a bot flag. */

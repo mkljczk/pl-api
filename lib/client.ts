@@ -429,7 +429,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#followers}
      */
     getAccountFollowers: async (accountId: string, params?: GetAccountFollowersParams) =>
-      this.#paginatedGet<Account>(`/api/v1/accounts/${accountId}/followers`, { params }, statusSchema),
+      this.#paginatedGet<Account>(`/api/v1/accounts/${accountId}/followers`, { params }, accountSchema),
 
     /**
      * Get account’s following
@@ -437,7 +437,7 @@ class PlApiClient {
      * @see {@link https://docs.joinmastodon.org/methods/accounts/#following}
      */
     getAccountFollowing: async (accountId: string, params?: GetAccountFollowingParams) =>
-      this.#paginatedGet<Account>(`/api/v1/accounts/${accountId}/following`, { params }, statusSchema),
+      this.#paginatedGet<Account>(`/api/v1/accounts/${accountId}/following`, { params }, accountSchema),
 
     /**
      * Get account’s featured tags
