@@ -6,6 +6,7 @@ export * from './events';
 export * from './filtering';
 export * from './groups';
 export * from './instance';
+export * from './interaction-requests';
 export * from './lists';
 export * from './media';
 export * from './my-account';

@@ -655,7 +655,7 @@ const getFeatures = (instance?: Instance) => {
       v.software === PLEROMA && gte(v.version, '2.7.0'),
     ]),
 
-    interactionPolicies: v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
+    interactionRequests: v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
 
     /**
      * TODO: Replace with proper feature gate.
@@ -686,9 +686,7 @@ const getFeatures = (instance?: Instance) => {
      * Ability to post statuses that don't federate.
      * @see POST /api/v1/statuses
      */
-    localOnlyStatuses: federation && any([
-      v.software === GOTOSOCIAL,
-    ]),
+    localOnlyStatuses: federation && v.software === GOTOSOCIAL,
 
     /**
      * Can sign in using username instead of e-mail address.

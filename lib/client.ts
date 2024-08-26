@@ -36,6 +36,7 @@ import {
   groupSchema,
   instanceSchema,
   interactionPoliciesSchema,
+  interactionRequestSchema,
   listSchema,
   locationSchema,
   markersSchema,
@@ -144,6 +145,7 @@ import type {
   GetGroupBlocksParams,
   GetGroupMembershipRequestsParams,
   GetGroupMembershipsParams,
+  GetInteractionRequestsParams,
   GetJoinedEventsParams,
   GetListAccountsParams,
   GetMutesParams,
@@ -1341,7 +1343,7 @@ class PlApiClient {
     /**
      * Get default interaction policies for new statuses created by you.
      *
-     * Requires features{@link Features['interactionPolicies']}.
+     * Requires features{@link Features['interactionRequests']}.
      * @see {@link https://docs.gotosocial.org/en/latest/api/swagger/}
      */
     getInteractionPolicies: async () => {
@@ -1353,7 +1355,7 @@ class PlApiClient {
     /**
      * Update default interaction policies per visibility level for new statuses created by you.
      *
-     * Requires features{@link Features['interactionPolicies']}.
+     * Requires features{@link Features['interactionRequests']}.
      * @see {@link https://docs.gotosocial.org/en/latest/api/swagger/}
      */
     updateInteractionPolicies: async (params: UpdateInteractionPoliciesParams) => {
@@ -3737,6 +3739,49 @@ class PlApiClient {
       const response = await this.request(`/api/v1/pleroma/events/${statusId}/ics`, { contentType: '' });
 
       return response.data;
+    },
+  };
+
+  public readonly interactionRequests = {
+    /**
+     * Get an array of interactions requested on your statuses by other accounts, and pending your approval.
+     *
+     * Requires features{@link Features['interactionRequests']}.
+     */
+    getInteractionRequests: async (params?: GetInteractionRequestsParams) =>
+      this.#paginatedGet('/api/v1/interaction_requests', { params }, interactionRequestSchema),
+
+    /**
+     * Get interaction request with the given ID.
+     *
+     * Requires features{@link Features['interactionRequests']}.
+     */
+    getInteractionRequest: async (interactionRequestId: string) => {
+      const response = await this.request(`/api/v1/interaction_requests/${interactionRequestId}`);
+
+      return interactionRequestSchema.parse(response.json);
+    },
+
+    /**
+     * Accept/authorize/approve an interaction request with the given ID.
+     *
+     * Requires features{@link Features['interactionRequests']}.
+     */
+    authorizeInteractionRequest: async (interactionRequestId: string) => {
+      const response = await this.request(`/api/v1/interaction_requests/${interactionRequestId}/authorize`, { method: 'POST' });
+
+      return interactionRequestSchema.parse(response.json);
+    },
+
+    /**
+     * Reject an interaction request with the given ID.
+     *
+     * Requires features{@link Features['interactionRequests']}.
+     */
+    rejectInteractionRequest: async (interactionRequestId: string) => {
+      const response = await this.request(`/api/v1/interaction_requests/${interactionRequestId}/authorize`, { method: 'POST' });
+
+      return interactionRequestSchema.parse(response.json);
     },
   };
 

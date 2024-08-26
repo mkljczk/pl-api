@@ -38,6 +38,7 @@ export * from './group-member';
 export * from './group-relationship';
 export * from './instance';
 export * from './interaction-policy';
+export * from './interaction-request';
 export * from './list';
 export * from './location';
 export * from './marker';

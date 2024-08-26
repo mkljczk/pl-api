@@ -104,6 +104,7 @@ const baseStatusSchema = z.object({
 });
 
 const preprocess = (status: any) => {
+  if (!status) return null;
   status = {
     ...(pick(status.pleroma || {}, [
       'quote',
