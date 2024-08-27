@@ -250,7 +250,10 @@ const getFeatures = (instance?: Instance) => {
      * Allow to bite users.
      * see POST /api/v1/bite
      */
-    bites: v.software === TOKI,
+    bites: any([
+      v.software === TOKI,
+      features.includes('pleroma:bites'),
+    ]),
 
     /** Whether people who blocked you are visible through the API. */
     blockersVisible: features.includes('blockers_visible'),
