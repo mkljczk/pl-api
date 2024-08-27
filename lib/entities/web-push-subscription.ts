@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /** @see {@link https://docs.joinmastodon.org/entities/WebPushSubscription/} */
 const webPushSubscriptionSchema = z.object({
-  id: z.number(),
+  id: z.coerce.string(),
   endpoint: z.string(),
   alerts: z.record(z.boolean()),
   server_key: z.string(),

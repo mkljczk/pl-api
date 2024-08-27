@@ -661,9 +661,9 @@ const getFeatures = (instance?: Instance) => {
     interactionRequests: v.software === GOTOSOCIAL && gte(v.version, '0.16.1'),
 
     /**
-     * TODO: Replace with proper feature gate.
+     * Server-side status language detection.
      */
-    languageDetection: features.includes('language_detection'),
+    languageDetection: features.includes('pleroma:language_detection'),
 
     /**
      * Can translate multiple statuses in a single request.

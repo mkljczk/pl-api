@@ -179,6 +179,7 @@ const usageSchema = coerceObject({
 });
 
 const instanceV1Schema = coerceObject({
+  account_domain: z.string().catch(''),
   approval_required: z.boolean().catch(false),
   configuration: configurationSchema,
   contact_account: accountSchema.optional().catch(undefined),
@@ -213,7 +214,7 @@ const instanceSchema = z.preprocess((data: any) => {
     data.version = `0.0.0 (compatible; GoToSocial ${data.version})`;
   }
 
-  if (data.domain) return data;
+  if (data.domain) return { account_domain: data.domain, ...data };
 
   const {
     approval_required,
@@ -236,6 +237,7 @@ const instanceSchema = z.preprocess((data: any) => {
 
   return {
     ...instance,
+    account_domain: instance.account_domain	|| uri,
     configuration: {
       ...configuration,
       polls: {
@@ -274,6 +276,7 @@ const instanceSchema = z.preprocess((data: any) => {
     thumbnail: { url: thumbnail },
   };
 }, coerceObject({
+  account_domain: z.string().catch(''),
   configuration: configurationSchema,
   contact: contactSchema,
   description: z.string().catch(''),
