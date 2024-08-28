@@ -1,3 +1,5 @@
+## The project development will continue in a monorepo. You can find it in [the `pl-fe` repo](https://github.com/mkljczk/pl-fe/tree/fork/packages/pl-api).
+
 # `pl-api`
 
 This project should be considered unstable before the 1.0.0 release. I will not provide any changelog or information on breaking changes until then.
